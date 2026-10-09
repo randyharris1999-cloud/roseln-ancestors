@@ -1,4 +1,4 @@
-ROSELN FAMILIES (family book) + ROSELN ANCESTORS (map)  -  how to put it online with Netlify
+ROSELN FAMILIES (family book) + ROSELN ANCESTORS (map)
 ================================================================
 Roseln Families brings together three sources on the Transylvanian Saxon village of Roseln:
 1.   the Ortsfamilienbuch Roseln (to 1925);
@@ -6,52 +6,15 @@ Roseln Families brings together three sources on the Transylvanian Saxon village
 3.   Christian Weiss’s Roseln mitten in Siebenbürgen (2010). 
 
 You can search any of the 8,224 people, move through their family with the family navigator or pedigree view, 
-and read their full records, translated into English with the German originals one tap away.
-Each house record shows its lot on the 1869 village plan and opens the companion Roseln Ancestors map,
-which follows households year by year. The app installs to a phone’s home screen and works offline.
+and read their full records, view photos from the Weiss book, all sourcestranslated into English
+with the German originals one tap away. Each house record shows its lot on the 1869 village plan and opens
+the companion Roseln Ancestors map, which follows households year by year.
+The app installs to a phone’s home screen and works offline.
 
-This folder IS the website. Nothing needs to be installed or built.
-
-FIRST TIME (about 5 minutes, free)
-1. Go to https://app.netlify.com/drop and sign up (a free account; email or Google login).
-2. Drag this whole "Roseln_Ancestors_App_v2" folder onto the page.
-3. Netlify uploads it and gives you an address like  https://random-name-123.netlify.app
-4. Rename it: Site configuration > Change site name  (e.g.  roseln-ancestors  ->  https://roseln-ancestors.netlify.app)
-5. Open the address on your phone and check it, then send it to family.
-   The address opens Roseln Families; the map is at the same address with /map.html on the end.
-   Old links that end in #p=<number> now open that person in Roseln Families.
-   Tip: to share a link that opens straight to one person, choose them in the app and copy
-   the address from the browser; it ends in  #p=<their number>  (for example #p=0201.C1.8).
-   A house works the same way:  #h=109  (Roseln Families) or  map.html#h=109  (the map).
-
-OPENING IT ON YOUR OWN COMPUTER
-- The two apps now load their data from the data folder, which browsers block for pages opened
-  straight from a folder (file://). Use the Netlify address, or in this folder run
-  "python -m http.server" and open http://localhost:8000 .
-
-ON A PHONE
-- iPhone: open the link in Safari > Share button > "Add to Home Screen".
-- Android: open in Chrome > menu (three dots) > "Add to Home screen" / "Install app".
-It then opens full-screen with its own church icon, and works offline after the first visit
-(the village imagery and the 1869 plan are built in; live satellite detail needs a connection).
-
-UPDATING THE SITE (important: this replaces the existing site instead of creating a new one)
-1. Log in at https://app.netlify.com and click your site "roseln-ancestors".
-2. Click the "Deploys" tab at the top.
-3. Scroll to the bottom of the Deploys page, to the dashed box that says
-   "Need to update your site? Drag and drop your site output folder here".
-4. Drag this whole "Roseln_Ancestors_App_v2" folder into THAT box.
-   (Dropping it on app.netlify.com/drop again makes a brand-new site with a new random address.)
-5. Wait for "Published", then open https://roseln-ancestors.netlify.app and reload once or twice.
-   Phones pick up the new version the next time the app is opened while online.
-- The version number in sw.js (currently roseln-anc-v8) is raised each time Claude prepares an update.
 
 PRIVACY
-- The church book stops at births in 1925, so almost everyone in it has died. The only later
-  entries are the family's own emigrant line (Mathilde Balthes, b.1926, d.2009).
-- The app contains the whole church book (about 8,200 people), not only our direct line.
-- Anyone who has the link can open it. Netlify's password protection is a paid feature; the free
-  approach is simply to share the link only with family.
+- The church book stops at births in 1925, so almost everyone in it has died.
+- The app contains the whole church book (about 8,200 people).
 
 CREDITS
 - Satellite imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics) - personal, non-commercial use.
