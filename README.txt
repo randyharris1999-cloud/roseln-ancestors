@@ -1,4 +1,5 @@
 ROSELN FAMILIES (family book) + ROSELN ANCESTORS (map)
+created by Randy Harris
 ================================================================
 Roseln Families brings together three sources on the Transylvanian Saxon village of Roseln:
 1.   the Ortsfamilienbuch Roseln (to 1925);
