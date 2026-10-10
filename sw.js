@@ -1,6 +1,6 @@
 // Offline support for Roseln Families (index.html) and its map (map.html).
 // Bump VERSION whenever you upload a new build so phones pick up the change.
-const VERSION = 'roseln-anc-v8';
+const VERSION = 'roseln-anc-v9';
 const CORE = ['./', 'index.html', 'map.html', 'vorfahren.html', 'manifest.webmanifest', 'manifest-map.webmanifest', 'roseln1869.png',
   'data/people.json', 'data/records.json',
   'sat_village.jpg', 'sat_valley.jpg', 'sat_mures.jpg', 'sat_ontario.jpg',
