@@ -1,7 +1,7 @@
 // Offline support for Roseln Families (index.html) and its map (map.html).
 // Bump VERSION whenever you upload a new build so phones pick up the change.
-const VERSION = 'roseln-anc-v11';
-const CORE = ['./', 'index.html', 'familien.html', 'map.html', 'arms.svg', 'manifest-de.webmanifest', 'data/records_de.json', 'data/de.json', 'vorfahren.html', 'manifest.webmanifest', 'manifest-map.webmanifest', 'roseln1869.png',
+const VERSION = 'roseln-anc-v12';
+const CORE = ['./', 'index.html', 'familien.html', 'map.html', 'karte.html', 'data/de_karte.json', 'arms.svg', 'manifest-de.webmanifest', 'data/records_de.json', 'data/de.json', 'vorfahren.html', 'manifest.webmanifest', 'manifest-map.webmanifest', 'roseln1869.png',
   'data/people.json', 'data/records.json',
   'sat_village.jpg', 'sat_valley.jpg', 'sat_mures.jpg', 'sat_ontario.jpg',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
@@ -9,7 +9,7 @@ const CORE = ['./', 'index.html', 'familien.html', 'map.html', 'arms.svg', 'mani
   'photos/mathilde_balthes_1926.jpg', 'photos/sophia_hermann_1850.jpg', 'photos/sofia_thome_1890.jpg',
   'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js'];
 const TILE_CACHE = 'roseln-anc-tiles', TILE_LIMIT = 600;
-const PAGES = ['map.html', 'families.html', 'familien.html', 'vorfahren.html'];
+const PAGES = ['map.html', 'families.html', 'familien.html', 'karte.html', 'vorfahren.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

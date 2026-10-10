@@ -517,8 +517,8 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   const DE = n => Array.isArray(n) ? n[0] : n, EN = n => Array.isArray(n) ? n[1] : '';
   const houseName = h => H[h] && H[h].street ? `${H[h].street} Nr. ${h}` : `Nr. ${h}`;
   const houseLink = h => H[h] ? `<a class="lnk" href="#h=${encodeURIComponent(h)}">${esc(houseName(h))}</a>` : esc(houseName(h));
-  const mapP = (i, t = '') => `map.html#p=${encodeURIComponent(IDS[i])}&from=fam&lang=de&back=${encodeURIComponent('#p=' + IDS[i] + t)}`;
-  const mapH = (h, back) => `map.html#h=${encodeURIComponent(h)}&from=fam&lang=de&back=${encodeURIComponent(back || '#h=' + h)}`;
+  const mapP = (i, t = '') => `karte.html#p=${encodeURIComponent(IDS[i])}&from=fam&lang=de&back=${encodeURIComponent('#p=' + IDS[i] + t)}`;
+  const mapH = (h, back) => `karte.html#h=${encodeURIComponent(h)}&from=fam&lang=de&back=${encodeURIComponent(back || '#h=' + h)}`;
   const MAP_ICO = '<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
   // a crop of the 1869 village plan centred on a house (plan pixel positions come from the map's georeference)
   function plot(h, w, ht, z, extra = '') {
@@ -1108,7 +1108,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       <div class="prose"><div class="lbl">Sprache</div>
         <p>Die Notizen beider Kirchenbücher erscheinen im Wortlaut der Bücher, ältere Einträge auf Latein. <a class="lnk" href="index.html" data-lang="en" lang="en">Roseln Families auf Englisch</a>.</p>
         <div class="lbl">Datenschutz</div><p>Das Roselner Buch endet mit den Geburten von 1925, daher sind fast alle darin Verzeichneten verstorben. Manche späteren Daten sind schon im Buch gesperrt und erscheinen als „Datum gesperrt“.</p>
-        <div class="lbl">Karte</div><p><a class="lnk" href="map.html">Roseln Ancestors</a> zeigt Jahr für Jahr, wo jede Familie wohnte, auf dem Dorfplan und auf Satellitenbildern (auf Englisch).</p></div></div>`;
+        <div class="lbl">Karte</div><p><a class="lnk" href="karte.html">Roselner Vorfahren</a> zeigt Jahr für Jahr, wo jede Familie wohnte, auf dem Dorfplan und auf Satellitenbildern.</p></div></div>`;
   }
 
   // ---------------- events ----------------
