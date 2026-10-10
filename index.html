@@ -8,6 +8,16 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Roseln Families">
 <meta name="theme-color" content="#faf7f1">
+<script>
+/* language: the splash screen remembers English or German (localStorage), or for this visit only (sessionStorage) */
+window.RLANG = {
+  get() { try { return localStorage.getItem('roseln-lang') || sessionStorage.getItem('roseln-lang'); } catch (e) { return null; } },
+  set(l, keep) { try { if (keep) localStorage.setItem('roseln-lang', l); else { localStorage.removeItem('roseln-lang'); sessionStorage.setItem('roseln-lang', l); } } catch (e) { } },
+  kept() { try { return !!localStorage.getItem('roseln-lang'); } catch (e) { return false; } }
+};
+/*LANG-ROUTE*/if (RLANG.get() === 'de') location.replace('familien.html' + location.hash);/*/LANG-ROUTE*/
+document.addEventListener('click', e => { const a = e.target.closest('[data-lang]'); if (a) RLANG.set(a.dataset.lang, RLANG.kept()); });
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -341,9 +351,49 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
 .lb-c{margin-top:8px;font:600 12px var(--ui);color:var(--faint)}
 .toast{position:fixed;left:50%;bottom:calc(var(--tabh) + 24px);transform:translateX(-50%);background:var(--ink);color:#fff;font:500 13px var(--ui);padding:9px 14px;border-radius:10px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
+/*SPLASH*/
+#splash{position:fixed;inset:0;z-index:90;overflow-y:auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(48px + env(safe-area-inset-top,0px)) 28px calc(24px + env(safe-area-inset-bottom,0px));background:radial-gradient(120% 60% at 50% 22%,#fffdf8 0%,var(--paper) 60%,#f1ebdf 100%)}
+#splash[hidden]{display:none}
+#splash .arms{width:min(170px,40vw);height:auto;filter:drop-shadow(0 6px 14px rgba(60,40,20,.18));margin-top:10px}
+#splash .kick{margin-top:28px;font:600 11px var(--ui);letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+#splash h1{font:600 46px/1 var(--serif);margin:8px 0 0;letter-spacing:-.01em}
+#splash .s1{margin:12px 0 0;font:italic 500 16px/1.4 var(--serif);color:var(--soft)}
+#splash .s1 b{display:block;font-weight:500;color:var(--faint);font-size:15px;margin-top:2px}
+#splash .rule{width:56px;height:2px;background:#810800;opacity:.75;margin:24px auto 0}
+#splash .ask{margin:24px 0 0;font:500 13px var(--ui);color:var(--soft)}
+#splash .btns{margin-top:14px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+#splash .btns button{padding:15px 18px;border-radius:14px;font:600 16px var(--ui);border:1px solid var(--line);background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.04);cursor:pointer}
+#splash .btns button.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+#splash .rem{margin-top:14px;font:400 12.5px var(--ui);color:var(--faint);display:flex;gap:7px;align-items:center;cursor:pointer}
+#splash .rem input{width:15px;height:15px;accent-color:var(--accent);margin:0}
+#splash .foot{margin:auto 0 0;padding-top:26px;font:400 11.5px/1.5 var(--ui);color:var(--faint)}
+/*/SPLASH*/
 </style>
 </head>
 <body data-route="find">
+<!--SPLASH--><div id="splash" role="dialog" aria-label="Choose your language · Sprache wählen" hidden>
+  <img class="arms" src="arms.svg" alt="Coat of arms of Transylvania · Wappen Siebenbürgens">
+  <div class="kick">Siebenbürgen · Transylvania</div>
+  <h1>Roseln</h1>
+  <p class="s1">Families of a Transylvanian Saxon village<b>Familien eines siebenbürgisch-sächsischen Dorfes</b></p>
+  <div class="rule"></div>
+  <p class="ask">Choose your language · Sprache wählen</p>
+  <div class="btns"><button type="button" class="p" data-pick="en" lang="en">English</button><button type="button" data-pick="de" lang="de">Deutsch</button></div>
+  <label class="rem"><input type="checkbox" id="splash-keep" checked>Remember my choice · Auswahl merken</label>
+  <p class="foot">Ortsfamilienbuch Roseln · Ortsfamilienbuch Magarei · Weiss, <i>Roseln mitten in Siebenbürgen</i><br>8,224 people · 124 houses · photographs and headstones</p>
+</div>
+<script>
+(function () {
+  const sp = document.getElementById('splash');
+  if (RLANG.get()) return;
+  sp.hidden = false;
+  sp.addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]'); if (!b) return;
+    RLANG.set(b.dataset.pick, document.getElementById('splash-keep').checked);
+    if (b.dataset.pick === 'de') location.replace('familien.html' + location.hash); else sp.hidden = true;
+  });
+})();
+</script><!--/SPLASH-->
 <div id="loading" role="status" aria-live="polite">
   <div class="eyebrow">Roseln Families</div>
   <div style="font:600 22px var(--serif)">Opening the books…</div>
@@ -600,7 +650,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const f = $('#find');
     f.innerHTML = `<div class="topnav"><a href="#find" data-tab="find">Find</a><a href="#village" data-tab="village">Village</a><a href="#books" data-tab="books">Books</a></div>
       <div class="wrap"><div class="find-top"><div class="eyebrow">Roseln Families</div><h1>Who are you looking for?</h1>
-      <div class="sub">${PP.length.toLocaleString('en')} people from three books, in English</div></div>
+      <div class="sub">${PP.length.toLocaleString('en')} people from three books, in English · <a class="lnk" href="familien.html" data-lang="de" lang="de">Deutsch</a></div></div>
       <label class="search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1f4b4a" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
       <input id="q" type="search" placeholder="Name, nickname or family number" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Search people"><button type="button" class="x" id="qx" aria-label="Clear" hidden>✕</button></label>
       <div class="chips" id="fchips" role="group" aria-label="Filter">${FILTERS.map(([k, t]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${ST.filter === k}">${t}</button>`).join('')}</div>
@@ -1090,6 +1140,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       <div class="prose"><div class="lbl">About the translations</div>
         <p>The notes in both church books are in German, with older entries in Latin. They are shown in English first; tap “German original” under any note to read the book's own words.</p>
         <div class="lbl">Privacy</div><p>The Roseln book stops at births in 1925, so almost everyone in it has died. Some later dates are withheld in the book itself and are shown as “date withheld”.</p>
+        <div class="lbl">Deutsch</div><p><a class="lnk" href="familien.html" data-lang="de" lang="de">Roseln Familien auf Deutsch</a>: the same app with the church books in their own words.</p>
         <div class="lbl">Companion map</div><p><a class="lnk" href="map.html">Roseln Ancestors</a> shows where each family lived, year by year, on the village plan and satellite imagery.</p></div></div>`;
   }
 

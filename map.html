@@ -1426,7 +1426,7 @@ fetch('data/people.json').then(r => { if (!r.ok) throw new Error(r.status); retu
     document.getElementById('lg-self').textContent = nm.split(' ')[0];
     const noRows = [...ANC].filter(k => !RAW.has(+k)).length;
     document.getElementById('undated-note').textContent = `${ANC.size - 1} ancestors of ${nm} are in the family book${noRows ? `; ${noRows} of them have no dates, so they are not on the timeline` : ''}.`;
-    const keep = (location.hash.match(/&(from=fam|back=[^&]*)/g) || []).join('');
+    const keep = (location.hash.match(/&(from=fam|lang=de|back=[^&]*)/g) || []).join('');
     try { history.replaceState(null, '', '#p=' + IDS[i] + keep); } catch (e) { location.hash = 'p=' + IDS[i] + keep; }
     render(); drawSpark(); drawTicks(); drawMarks();
     SEL = root; TR.hist = []; refreshView();
@@ -1474,9 +1474,9 @@ fetch('data/people.json').then(r => { if (!r.ok) throw new Error(r.status); retu
   function famBack() {
     const fm = /[#&]from=fam/.test(location.hash), bk = /[#&]back=([^&]+)/.exec(location.hash);
     if (!fm || document.getElementById('fam-back')) return;
-    const a = document.createElement('a'); a.id = 'fam-back'; a.href = 'index.html' + (bk ? decodeURIComponent(bk[1]) : '');
-    a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg><span>Roseln Families</span>';
-    a.addEventListener('click', e => { try { const r = new URL(document.referrer); if (r.origin === location.origin && /(\/|index\.html|families\.html)$/.test(r.pathname) && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) { } });
+    const a = document.createElement('a'); a.id = 'fam-back'; const de = /[#&]lang=de/.test(location.hash); a.href = (de ? 'familien.html' : 'index.html') + (bk ? decodeURIComponent(bk[1]) : '');
+    a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg><span>' + (de ? 'Roseln Familien' : 'Roseln Families') + '</span>';
+    a.addEventListener('click', e => { try { const r = new URL(document.referrer); if (r.origin === location.origin && /(\/|index\.html|families\.html|familien\.html)$/.test(r.pathname) && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) { } });
     document.body.appendChild(a); document.body.classList.add('from-fam');
   }
   function boot() {
