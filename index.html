@@ -426,9 +426,9 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     KIDS.forEach(a => a.sort((x, y) => byear(x) - byear(y)));
     PHREF = new Map(); (D.WP || []).forEach(w => { if (!PHREF.has(w.ref)) PHREF.set(w.ref, []); PHREF.get(w.ref).push(w); });
     PHID = new Map((D.WP || []).map(w => [w.id, w]));
-    PHBY = new Map(); (D.WP || []).forEach(w => w.ppl.forEach(i => { if (!PHBY.has(i)) PHBY.set(i, []); PHBY.get(i).push(w.id); }));
+    PHBY = new Map(); HSBY = new Map(); (D.WP || []).forEach(w => w.ppl.forEach(i => { const M = w.hs ? HSBY : PHBY; if (!M.has(i)) M.set(i, []); M.get(i).push(w.id); }));
   }
-  let PHREF = new Map(), PHID = new Map(), PHBY = new Map();
+  let PHREF = new Map(), PHID = new Map(), PHBY = new Map(), HSBY = new Map();
   // the photograph a note refers to: on that page, preferably one showing this person
   const phFor = (k, src) => { const l = PHREF.get(src) || []; return l.find(w => w.ppl.includes(+k)) || (l.length === 1 ? l[0] : null); };
   const phThumb = w => w ? `<button type="button" class="wph" data-ph="${w.id}" aria-label="Open the photograph"><img src="${w.f}" alt="" loading="lazy"><span>Photograph <span class="w">(${w.fam ? 'family collection' : 'Weiss, ' + esc(w.page)})</span></span></button>` : '';
@@ -438,7 +438,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     (w.links || []).forEach(([name, i]) => { const e = esc(name); const at = t.indexOf(e); if (at >= 0 && !/<a [^>]*$/.test(t.slice(0, at))) t = t.slice(0, at) + `<a class="lnk" href="#p=${encodeURIComponent(IDS[i])}">${e}</a>` + t.slice(at + e.length); });
     return t;
   }
-  const phStrip = (list, label) => list.length ? `<div class="lbl">${label} <span>${list.length}</span></div><div class="faces wstrip" data-phset="${list.map(w => w.id).join(',')}">${list.map(w => `<button type="button" data-ph="${w.id}"><img src="${w.f}" alt="" loading="lazy"><small>${w.y || w.page}</small></button>`).join('')}</div>` : '';
+  const phStrip = (list, label) => list.length ? `<div class="lbl">${label} <span>${list.length}</span></div><div class="faces wstrip" data-phset="${list.map(w => w.id).join(',')}">${list.map(w => `<button type="button" data-ph="${w.id}"><img src="${w.f}" alt="" loading="lazy"><small>${w.hs ? esc(w.sub.replace(/^.*· /, '').split(/ and |, /)[0]) : (w.y || w.page)}</small></button>`).join('')}</div>` : '';
   function openPhoto(id, list) {
     list = list && list.length ? list : [id];
     let at = Math.max(0, list.indexOf(id));
@@ -453,7 +453,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
         ${w.nb.length ? `<div class="lb-nb">Born after 1925, so not in the church book: ${w.nb.map(esc).join(', ')}</div>` : ''}
         ${w.um.length ? `<div class="lb-nb">Not matched to one person in the books: ${w.um.map(esc).join(', ')}</div>` : ''}
         ${w.h.length || w.st.length || w.ch ? `<div class="lb-pl">${w.h.map(h => `<a class="chip" href="#h=${encodeURIComponent(h)}">${esc(houseName(h))}</a>`).join('')}${w.st.map(x => `<a class="chip" href="#village&v=houses&s=${encodeURIComponent(x)}">${esc(x)}</a>`).join('')}${w.ch ? '<a class="chip" href="#village&v=houses&s=church">The church</a>' : ''}</div>` : ''}
-        ${w.de ? `<details class="orig"><summary>German original</summary><p lang="de">${esc(w.de)}</p></details>` : ''}
+        ${w.de ? `<details class="orig"${w.hs ? ' open' : ''}><summary>${w.hs ? 'Inscription (German)' : 'German original'}</summary><p lang="de">${esc(w.de)}</p></details>` : ''}
         ${list.length > 1 ? `<div class="lb-c">${at + 1} of ${list.length}</div>` : ''}</div>`;
       o.querySelector('.lb-x').onclick = close;
       if (list.length > 1) { o.querySelector('.lb-p').onclick = () => { at = (at - 1 + list.length) % list.length; draw(); }; o.querySelector('.lb-nx').onclick = () => { at = (at + 1) % list.length; draw(); }; }
@@ -637,7 +637,8 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     if (!q && ST.filter === 'all') {
       const faces = Object.keys(PH).map(Number);
       box.innerHTML = `${faces.length ? `<div class="lbl">With photographs</div><div class="faces">${faces.map(i => `<a href="#p=${encodeURIComponent(IDS[i])}">${av(i)}${esc(nm(i))}<small>${esc(span(i))}</small></a>`).join('')}</div>` : ''}
-        ${phStrip((D.WP || []).filter(w => w.fam), 'Family photographs')}
+        ${phStrip((D.WP || []).filter(w => w.fam && !w.hs), 'Family photographs')}
+        ${phStrip((D.WP || []).filter(w => w.hs && !w.por), 'Headstones in the Saxon cemetery')}
         ${phStrip((D.WP || []).filter(w => w.ppl.length && !w.fam), 'People in the Weiss photographs')}
         ${(D.WP || []).length ? `<a class="lnk" href="#books&g=1" style="font-size:13px;display:inline-block;margin-top:4px">All ${D.WP.length} photographs ›</a>` : ''}
         <div class="lbl">Browse by surname <span>${SURN.length} names</span></div>
@@ -677,7 +678,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     return `<div class="bar" id="pbar"><a href="#find" aria-label="Back to Find">${ICO.back}<span>Find</span></a><span class="t">${esc(nm(i))}</span><button type="button" id="share" aria-label="Share a link to ${esc(nm(i))}">${ICO.share}</button></div>
       <div class="ph">${av(i)}<div style="min-width:0"><h2>${esc(nm(i))}</h2>${nick(i) ? `<span class="nick">„${esc(nick(i))}“</span>` : ''}
       <div class="d">${esc(life.join(' – ')) || 'Dates not recorded'}</div><div class="d2">${esc(line)}</div></div></div>
-      <div class="acts"><a class="btn" href="${mapP(i)}">${ICO.map}Show on the map</a>${PHBY.has(i) ? `<button type="button" class="btn" data-phl="${i}">${ICO.photo}${PHBY.get(i).length === 1 ? 'In a photograph' : `In ${PHBY.get(i).length} photographs`}</button>` : ''}${p[4] >= 0 || p[5] >= 0 || kidsOf(i).length ? `<a class="btn" href="#p=${encodeURIComponent(IDS[i])}&t=family&m=pedigree">Pedigree</a>` : ''}</div>
+      <div class="acts"><a class="btn" href="${mapP(i)}">${ICO.map}Show on the map</a>${PHBY.has(i) ? `<button type="button" class="btn" data-phl="${i}">${ICO.photo}${PHBY.get(i).length === 1 ? 'In a photograph' : `In ${PHBY.get(i).length} photographs`}</button>` : ''}${HSBY.has(i) ? `<button type="button" class="btn" data-hsl="${i}">${ICO.photo}${HSBY.get(i).length === 1 ? 'Headstone' : `Headstone (${HSBY.get(i).length} photos)`}</button>` : ''}${p[4] >= 0 || p[5] >= 0 || kidsOf(i).length ? `<a class="btn" href="#p=${encodeURIComponent(IDS[i])}&t=family&m=pedigree">Pedigree</a>` : ''}</div>
       ${l.flag ? `<div class="flag"><span aria-hidden="true">⚑</span><span>${esc(l.flag)}</span></div>` : ''}
       <nav class="ptabs" aria-label="About ${esc(nm(i))}">${tabs.map(([t, n]) => `<a href="#p=${encodeURIComponent(IDS[i])}&t=${t}" aria-current="${t === tab}">${n}</a>`).join('')}</nav>`;
   }
@@ -1057,7 +1058,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   }
 
   // ---------------- BOOKS ----------------
-  const GF = { all: ['All', w => true], fam: ['Family', w => w.fam], ppl: ['People', w => w.ppl.length && !w.fam], house: ['Houses & streets', w => w.h.length || w.st.length], church: ['Church', w => w.ch] };
+  const GF = { all: ['All', w => true], fam: ['Family', w => w.fam && !w.hs], hs: ['Headstones', w => w.hs], ppl: ['People', w => w.ppl.length && !w.fam], house: ['Houses & streets', w => w.h.length || w.st.length], church: ['Church', w => w.ch] };
   const gallery = () => { const f = GF[ST.gf || 'all'], all = (D.WP || []).filter(f[1]);
     return `<div class="chips" role="group" aria-label="Show" style="margin-bottom:10px">${Object.entries(GF).map(([k, [t, fn]]) => `<button type="button" class="chip" data-gf="${k}" aria-pressed="${(ST.gf || 'all') === k}">${t}<i>${(D.WP || []).filter(fn).length}</i></button>`).join('')}</div>
     <div class="gal" data-phset="${all.map(w => w.id).join(',')}">${all.map(w => `<button type="button" class="gal-i" data-ph="${w.id}"><img src="${w.f}" alt="" loading="lazy"><span>${w.y ? `<b>${w.y}</b> · ` : ''}${esc((w.sub || w.en.split(/[.:;]/)[0]).replace(/^./, c => c.toUpperCase()))}</span></button>`).join('')}</div>`; };
@@ -1101,6 +1102,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const ph = e.target.closest('[data-ph]'); if (ph) { e.preventDefault(); const ctx = ph.closest('[data-phset]'); openPhoto(ph.dataset.ph, ctx ? ctx.dataset.phset.split(',') : null); return; }
     const gfb = e.target.closest('[data-gf]'); if (gfb) { ST.gf = gfb.dataset.gf; $('#galbox').innerHTML = gallery(); return; }
     const pl = e.target.closest('[data-phl]'); if (pl) { const l = PHBY.get(+pl.dataset.phl) || []; if (l.length) openPhoto(l[0], l); return; }
+    const hl = e.target.closest('[data-hsl]'); if (hl) { const l = HSBY.get(+hl.dataset.hsl) || []; if (l.length) openPhoto(l[0], l); return; }
   });
   window.addEventListener('scroll', () => { const b = $('#pbar'); if (b) b.classList.toggle('scrolled', window.scrollY > 90); }, { passive: true });
   $('#main').addEventListener('scroll', () => { const b = $('#pbar'); if (b) b.classList.toggle('scrolled', $('#main').scrollTop > 90); }, { passive: true });
