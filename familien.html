@@ -210,6 +210,21 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
 .tl:before{content:"";position:absolute;left:47px;top:10px;bottom:0;width:2px;background:#ddd3bf}
 .ev{display:flex;margin-bottom:10px;position:relative}
 .ev .y{width:40px;flex:none;font:600 13px var(--serif);color:var(--accent);padding-top:10px;font-variant-numeric:tabular-nums}
+.ev .y small{display:block;font:500 10.5px/1.2 var(--ui);color:var(--soft);margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.film{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--paper,#fbf9f4);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;color:inherit;font:inherit;margin-top:6px}
+.film .fth{position:relative;flex:none;width:132px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#222}
+.film .fth img{width:100%;height:100%;object-fit:cover;display:block;filter:sepia(.2)}
+.film .fth i{position:absolute;inset:0;margin:auto;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center}
+.film .fth i:after{content:"";border-left:13px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent;margin-left:4px}
+.film b{display:block;font-size:14px;line-height:1.3;color:var(--ink)}
+.film span{display:block;font-size:12px;line-height:1.4;color:var(--soft);margin-top:3px}
+.filmbox{position:fixed;inset:0;z-index:60;background:rgba(10,10,10,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.filmbox .fb-bar{width:min(960px,100%);display:flex;align-items:center;gap:10px;color:#fff;margin-bottom:10px;font-size:14px}
+.filmbox .fb-bar b{flex:1;min-width:0}
+.filmbox button{background:#fff;color:#111;border:0;border-radius:999px;padding:7px 14px;font:600 13px var(--ui);cursor:pointer}
+.filmbox .fb-v{width:min(960px,100%);aspect-ratio:16/9;max-height:calc(100vh - 120px);background:#000;border-radius:10px;overflow:hidden}
+.filmbox iframe{width:100%;height:100%;border:0;display:block}
+.filmbox p{color:#ccc;font-size:12px;margin:10px 0 0}
 .ev .dot{position:absolute;left:42px;top:12px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2.5px solid var(--accent)}
 .ev.we .dot{border-color:var(--t-we)}.ev.mg .dot{border-color:var(--t-mg)}.ev.gd .dot{border-color:var(--t-gd)}
 .ev .bx{flex:1;min-width:0;margin-left:22px;padding:9px 12px 10px}
@@ -781,6 +796,49 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   const at = (dt, pl) => [dt, pl].filter(Boolean).map(esc).join(', ');
   const byX = x => x ? ` <span class="muted">· ${esc(x)}</span>` : '';
   const wits = w => w && w.length ? `<br><span class="muted">Zeugen:</span> ${w.map(([n, f]) => gpLink(n, f)).join(', ')}` : '';
+  // ---- age under the year (Life timeline)
+  const AGE_L = { born: 'geboren', age: n => n + ' J.', c: n => 'ca. ' + n + ' J.', after: 'nach dem Tod' };
+  const MONX = { jan: 1, feb: 2, mar: 3, 'mär': 3, apr: 4, may: 5, mai: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, okt: 10, nov: 11, dec: 12, dez: 12 };
+  function parseD(s) {
+    s = String(s || '').trim(); if (!s) return null;
+    const approx = /^(errech|um|vor|nach|about|calc|before|after|c\.|ca\.)/i.test(s);
+    let m;
+    if ((m = /(\d{1,2})\.(\d{1,2})\.(\d{4})/.exec(s))) return { y: +m[3], m: +m[2], d: +m[1], ex: !approx };
+    if ((m = /(\d{4})-(\d\d)-(\d\d)/.exec(s))) return { y: +m[1], m: +m[2], d: +m[3], ex: !approx };
+    if ((m = /(\d{1,2})\.?\s+([A-Za-zäÄ]{3})[a-zä]*\.?\s+(\d{4})/.exec(s)) && MONX[m[2].toLowerCase()]) return { y: +m[3], m: MONX[m[2].toLowerCase()], d: +m[1], ex: !approx };
+    if ((m = /\b(1[4-9]\d\d|20[0-2]\d)\b/.exec(s))) return { y: +m[1], ex: false };
+    return null;
+  }
+  function ageMark(E, bs, ds) {
+    const b = parseD(bs); if (!b) return;
+    const dEv = E.find(e => e.death), dd = parseD(ds) || (dEv && dEv.y ? { y: dEv.y, ex: false } : null);
+    const after = (e, t) => t && dd && !e.death && (t.ex && dd.ex ? (t.y - dd.y || t.m - dd.m || t.d - dd.d) > 0 : e.y > dd.y);
+    E.forEach(e => {
+      if (!e.y) return;
+      if (e.birth) { e.age = AGE_L.born; return; }
+      const t = parseD(e.dt || e.d) || { y: e.y, ex: false };
+      if (t.y !== e.y) t.y = e.y, t.ex = false;
+      if (after(e, t)) { e.age = AGE_L.after; return; }
+      let n, exact = false;
+      if (b.ex && t.ex) { n = t.y - b.y - (t.m < b.m || (t.m === b.m && t.d < b.d) ? 1 : 0); exact = true; }
+      else if (b.ex && t.y === b.y) { n = 0; exact = true; }
+      else n = t.y - b.y;
+      if (n < 0 || n > 110) return;
+      e.age = exact ? AGE_L.age(n) : AGE_L.c(n);
+    });
+  }
+  // ---- film (YouTube), Johann Balthes and Sofia Thome
+  const FILM = { yt: '2Xs7f-gKGGo', y: 1959, ppl: [620, 621], t: 'Film: Johann Balthes und Sofia Thome, um 1959–1963' };
+  const filmCard = () => `<button type="button" class="film" data-film="1"><span class="fth"><img src="https://i.ytimg.com/vi/${FILM.yt}/hqdefault.jpg" alt="" loading="lazy"><i></i></span><span style="min-width:0;margin:0"><b>Film abspielen</b><span>Läuft über YouTube; braucht eine Internetverbindung.</span></span></button>`;
+  function openFilm() {
+    const o = document.createElement('div'); o.className = 'filmbox'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', FILM.t);
+    o.innerHTML = `<div class="fb-bar"><b>${esc(FILM.t)}</b><button type="button" class="fbx">Schließen</button></div><div class="fb-v"><iframe src="https://www.youtube-nocookie.com/embed/${FILM.yt}?autoplay=1&rel=0&playsinline=1" title="${esc(FILM.t)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div><p>Läuft über YouTube; braucht eine Internetverbindung.</p>`;
+    document.body.appendChild(o);
+    const close = () => { o.remove(); document.removeEventListener('keydown', k); };
+    const k = e => { if (e.key === 'Escape') close(); };
+    o.querySelector('.fbx').onclick = close; o.addEventListener('click', e => { if (e.target === o) close(); }); document.addEventListener('keydown', k);
+  }
+  document.addEventListener('click', e => { if (e.target.closest('[data-film]')) { e.preventDefault(); openFilm(); } });
   function events(i) {
     const k = String(i), p = PP[i], l = L[k] || {}, o = O[k] || {}, MG = o.mg || {}, v = vitals(i), E = [];
     const add = (y, t, b, tags, x = {}) => E.push(Object.assign({ y, t, b, tags, n: E.length }, x));
@@ -790,11 +848,11 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       let b = `Geboren ${esc(fmtOfb(p[2]) || '(Datum nicht verzeichnet)')}${o.bp ? ', ' + esc(o.bp) : v.bornAt ? ', ' + esc(v.bornAt) : ''}.`;
       if (o.bap) b += ` Getauft ${at(o.bap[0], o.bap[1] !== o.bp ? o.bap[1] : '')}${byX(o.bap[2])}.`;
       if ((o.gp || []).length) b += `<br><span class="muted">Paten:</span> ${o.gp.map(([n, f]) => gpLink(n, f)).join(', ')}`;
-      add(by, o.bap ? 'Geboren und getauft' : 'Geboren', `<p>${b}</p>${(o.lat || []).length ? quote(o.lat[0]) : ''}`, ['ch']);
+      add(by, o.bap ? 'Geboren und getauft' : 'Geboren', `<p>${b}</p>${(o.lat || []).length ? quote(o.lat[0]) : ''}`, ['ch'], { birth: 1 });
     }
-    if (o.vac) add(yOf(o.vac[0]), 'Gegen Pocken geimpft', `<p>${at(o.vac[0], o.vac[1])}${o.vac[2] ? byX(o.vac[2]) : ''}</p>`, ['ch'], { minor: 1 });
-    if (o.conf) add(yOf(o.conf[0]), 'Konfirmiert', `<p>${at(o.conf[0], o.conf[1])}${byX(o.conf[2])}</p>`, ['ch']);
-    else if (MG.conf) add(yOf(MG.conf[0]), 'Konfirmiert', `<p>${at(MG.conf[0], MG.conf[1])}</p>`, ['mg']);
+    if (o.vac) add(yOf(o.vac[0]), 'Gegen Pocken geimpft', `<p>${at(o.vac[0], o.vac[1])}${o.vac[2] ? byX(o.vac[2]) : ''}</p>`, ['ch'], { minor: 1, dt: o.vac[0] });
+    if (o.conf) add(yOf(o.conf[0]), 'Konfirmiert', `<p>${at(o.conf[0], o.conf[1])}${byX(o.conf[2])}</p>`, ['ch'], { dt: o.conf[0] });
+    else if (MG.conf) add(yOf(MG.conf[0]), 'Konfirmiert', `<p>${at(MG.conf[0], MG.conf[1])}</p>`, ['mg'], { dt: MG.conf[0] });
     // marriages
     const mar = o.mar || {}, mkeys = Object.keys(mar).sort();
     mkeys.forEach(mk => {
@@ -807,11 +865,11 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       if (m.div && (m.div[0] || m.div[1])) ev.push(`${m.off ? 'Verlobung aufgelöst' : 'Geschieden'} ${at(m.div[0], m.div[1])}`);
       const notes = ['eng', 'wed', 'div'].map(x => m[x] && m[x][4]).filter(Boolean);
       const y = yOf(m.wed && m.wed[0]) || yOf(m.civ && m.civ[0]) || yOf(m.eng && m.eng[0]);
-      add(y, wj >= 0 ? `${m.off ? 'Verlobt mit' : 'Heiratet'} ${plink(wj)}` : (m.off ? 'Verlobung' : 'Heirat'), `<p>${ev.join('<br>')}</p>${notes.map(n => quote(n)).join('')}`, ['ch'], { raw: 1 });
+      add(y, wj >= 0 ? `${m.off ? 'Verlobt mit' : 'Heiratet'} ${plink(wj)}` : (m.off ? 'Verlobung' : 'Heirat'), `<p>${ev.join('<br>')}</p>${notes.map(n => quote(n)).join('')}`, ['ch'], { raw: 1, dt: (m.wed && m.wed[0]) || (m.civ && m.civ[0]) || (m.eng && m.eng[0]) });
     });
-    if (!mkeys.length) v.mar.forEach(m => add(yOf(m.d), m.who ? `Heiratet ${esc(titleName(m.who))}` : 'Heirat', `<p>${esc(fmtIso(m.d))}${m.at ? ', ' + esc(m.at) : ''}</p>`, ['ch'], { raw: 1 }));
+    if (!mkeys.length) v.mar.forEach(m => add(yOf(m.d), m.who ? `Heiratet ${esc(titleName(m.who))}` : 'Heirat', `<p>${esc(fmtIso(m.d))}${m.at ? ', ' + esc(m.at) : ''}</p>`, ['ch'], { raw: 1, dt: m.d }));
     // children
-    kidsOf(i).forEach(j => { add(yOf(PP[j][2]) || null, `${PP[j][2] ? 'Kind geboren' : 'Kind'}: ${plink(j)}${PP[j][3] && pyear(PP[j][3]) - pyear(PP[j][2]) < 3 ? ' <span class="muted">(früh verstorben)</span>' : ''}`, '', ['ch'], { minor: 1, raw: 1 }); });
+    kidsOf(i).forEach(j => { add(yOf(PP[j][2]) || null, `${PP[j][2] ? 'Kind geboren' : 'Kind'}: ${plink(j)}${PP[j][3] && pyear(PP[j][3]) - pyear(PP[j][2]) < 3 ? ' <span class="muted">(früh verstorben)</span>' : ''}`, '', ['ch'], { minor: 1, raw: 1, dt: PP[j][2] }); });
     // homes and places away
     v.homes.forEach(x => {
       const Hh = H[x.h], lists = Hh && Hh.lists.length ? `<p class="muted">Besitzer laut Hauslisten: ${Hh.lists.map(([y, n]) => `${esc(y)} ${esc(n)}`).join(' · ')} <span class="w">(Weiss)</span></p>` : '';
@@ -849,8 +907,10 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       let b = `Gestorben ${esc(fmtOfb(p[3]) || (o.dp ? '(Datum gesperrt)' : ''))}${v.diedTree && v.diedAt ? ', ' + esc(v.diedAt) : o.dp ? ', ' + esc(o.dp.replace(/^in /, '')) : v.diedAt ? ', ' + esc(v.diedAt) : ''}${cause || age ? ` <span class="muted">${[cause && 'an ' + cause, age].filter(Boolean).map(esc).join(', ')}</span>` : ''}.`;
       if (bur) b += ` Begraben ${at(bur[0], bur[1] !== o.dp ? bur[1] : '')}${byX(bur[2])}.`;
       const y = yOf(p[3]) || yOf(bur && bur[0]);
-      add(y, 'Gestorben', `<p>${b}</p>`, o.dp || o.cause || o.bur ? (v.diedTree ? ['ch', 'gd'] : ['ch']) : MG.cause || MG.bur ? ['mg'] : v.diedTree ? ['gd'] : ['ch'], { death: 1 });
+      add(y, 'Gestorben', `<p>${b}</p>`, o.dp || o.cause || o.bur ? (v.diedTree ? ['ch', 'gd'] : ['ch']) : MG.cause || MG.bur ? ['mg'] : v.diedTree ? ['gd'] : ['ch'], { death: 1, dt: p[3] || (bur && bur[0]) });
     }
+    if (FILM.ppl.includes(i)) add(FILM.y, 'Film: Johann Balthes und Sofia Thome, um 1959–1963', `<p>Filmaufnahmen der Familie aus Malahide Township und Norfolk Township, Ontario.</p>${filmCard()}`, ['gd'], { film: 1 });
+    ageMark(E, p[2] || (o.bap && o.bap[0]), p[3]);
     return E;
   }
   function lifeHTML(i) {
@@ -860,7 +920,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const chips = [['all', 'Alle', E.length], ...['ch', 'we', 'mg', 'gd'].filter(t => cnt[t]).map(t => [t, TAGS[t], cnt[t]])];
     const list = E.filter(e => f === 'all' || e.tags.includes(f));
     const dated = list.filter(e => e.y).sort((a, b) => a.y - b.y || (a.death ? 1 : 0) - (b.death ? 1 : 0) || a.n - b.n), undated = list.filter(e => !e.y);
-    const evHTML = e => `<div class="ev ${e.minor ? 'minor' : ''} ${e.tags[0] && e.tags[0] !== 'ch' ? e.tags[0] : ''}"><div class="y">${e.y || ''}</div><div class="dot"></div><div class="bx ${e.minor ? '' : 'box'}">
+    const evHTML = e => `<div class="ev ${e.minor ? 'minor' : ''} ${e.tags[0] && e.tags[0] !== 'ch' ? e.tags[0] : ''}"><div class="y">${e.y || ''}${e.age ? `<small>${e.age}</small>` : ''}</div><div class="dot"></div><div class="bx ${e.minor ? '' : 'box'}">
       <h4>${e.raw ? e.t : esc(e.t)}${e.d ? ` <span class="muted" style="font-weight:500;font-size:12.5px">· ${esc(e.d)}</span>` : ''}</h4>${e.b || ''}
       ${!e.minor && (e.tags.length || e.go) ? `<div class="ft">${e.tags.map(tagHTML).join('')}${e.go ? `<a class="go" href="${e.go}">${e.goT}</a>` : ''}</div>` : ''}</div></div>`;
     return `<div class="chips" id="lchips" role="group" aria-label="Einträge aus" style="margin-top:12px">${chips.map(([k, t, n]) => `<button type="button" class="chip" data-lf="${k}" aria-pressed="${f === k}">${t}<i>${n}</i></button>`).join('')}</div>
@@ -1076,9 +1136,11 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   }
 
   // ---------------- BOOKS ----------------
-  const GF = { all: ['Alle', w => true], fam: ['Familie', w => w.fam && !w.hs], hs: ['Grabsteine', w => w.hs], ppl: ['Personen', w => w.ppl.length && !w.fam], house: ['Häuser & Gassen', w => w.h.length || w.st.length], church: ['Kirche', w => w.ch] };
-  const gallery = () => { const f = GF[ST.gf || 'all'], all = (D.WP || []).filter(f[1]);
-    return `<div class="chips" role="group" aria-label="Zeigen" style="margin-bottom:10px">${Object.entries(GF).map(([k, [t, fn]]) => `<button type="button" class="chip" data-gf="${k}" aria-pressed="${(ST.gf || 'all') === k}">${t}<i>${(D.WP || []).filter(fn).length}</i></button>`).join('')}</div>
+  const GF = { all: ['Alle', w => true], ppl: ['Personen', w => w.ppl.length && !w.fam], house: ['Häuser & Gassen', w => w.h.length || w.st.length], church: ['Kirche', w => w.ch] };
+  const WEISS = () => (D.WP || []).filter(w => !w.fam && !w.hs);
+  const galGrid = list => `<div class="gal" data-phset="${list.map(w => w.id).join(',')}">${list.map(w => `<button type="button" class="gal-i" data-ph="${w.id}"><img src="${w.f}" alt="" loading="lazy"><span>${w.y ? `<b>${w.y}</b> · ` : ''}${esc((w.sub || w.en.split(/[.:;]/)[0]).replace(/^./, c => c.toUpperCase()))}</span></button>`).join('')}</div>`;
+  const gallery = () => { const f = GF[ST.gf || 'all'], all = WEISS().filter(f[1]);
+    return `<div class="chips" role="group" aria-label="Zeigen" style="margin-bottom:10px">${Object.entries(GF).map(([k, [t, fn]]) => `<button type="button" class="chip" data-gf="${k}" aria-pressed="${(ST.gf || 'all') === k}">${t}<i>${WEISS().filter(fn).length}</i></button>`).join('')}</div>
     <div class="gal" data-phset="${all.map(w => w.id).join(',')}">${all.map(w => `<button type="button" class="gal-i" data-ph="${w.id}"><img src="${w.f}" alt="" loading="lazy"><span>${w.y ? `<b>${w.y}</b> · ` : ''}${esc((w.sub || w.en.split(/[.:;]/)[0]).replace(/^./, c => c.toUpperCase()))}</span></button>`).join('')}</div>`; };
   function stats() {
     let ch = 0, we = 0, mg = 0, gd = 0, notes = 0, wn = 0;
@@ -1100,11 +1162,16 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
         <div class="stats"><div><b>${n(s.mg)}</b>Roselner dort gefunden</div></div></div>
       <div class="box book"><div class="bar2" style="background:var(--t-we)"></div><b>Weiss, <i>Roseln mitten in Siebenbürgen</i></b> ${tagHTML('we')}
         <p>Christian Weiss’ Geschichte des Dorfes (2010): die Hauslisten von 1869, 1951/58 und 1964, Ämter und Amtsträger, Schule und Kirchenleben, die Kriege und die Deportation von 1945, dazu Fotos. Alles aus Weiss ist mit <span class="w">(Weiss)</span> gekennzeichnet.</p>
-        <div class="stats"><div><b>${n(s.wn)}</b>Notizen zu ${n(s.we)} Personen</div><div><b>${Object.keys(H).length}</b>Hausgeschichten</div><div><b>${(D.WP || []).length}</b>Fotos</div></div>
-        <div class="lbl" id="gal-h">Fotos</div><div id="galbox">${gallery()}</div><p class="src">Aufgenommen sind nur Fotos, die jemanden aus den Kirchenbüchern, ein Roselner Haus, eine Gasse oder die Kirche zeigen, dazu Fotos aus dem Familienbesitz und Grabsteine.</p></div>
+        <div class="stats"><div><b>${n(s.wn)}</b>Notizen zu ${n(s.we)} Personen</div><div><b>${Object.keys(H).length}</b>Hausgeschichten</div><div><b>${WEISS().length}</b>Fotos</div></div>
+        <div class="lbl" id="gal-h">Aus dem Buch von Weiss</div><div id="galbox">${gallery()}</div><p class="src">Aufgenommen sind nur Fotos, die jemanden aus den Kirchenbüchern, ein Roselner Haus, eine Gasse oder die Kirche zeigen.</p></div>
       <div class="box book"><div class="bar2" style="background:var(--t-gd)"></div><b>Stammbaum</b> ${tagHTML('gd')}
         <p>Der Stammbaum der Familie Harris (GED-Datei) und die Fotos der Familie: die Auswanderung nach Amerika und Kanada, die die Kirchenbücher nicht erfassen, und Bildnisse der Familien Thomä und Balthes.</p>
-        <div class="stats"><div><b>${n(s.gd)}</b>Personen</div></div></div>
+        <div class="stats"><div><b>${n(s.gd)}</b>Personen</div><div><b>${(D.WP || []).filter(w => w.fam && !w.hs).length}</b>Fotos</div><div><b>1</b>Film</div></div>
+        <div class="lbl">Unsere Familienfotos</div>${galGrid((D.WP || []).filter(w => w.fam && !w.hs))}${filmCard()}<p class="src">Familienbesitz; die Bildnisse von Anna Thomä und der Familie Balthes stammen von Mathilde Balthes.</p></div>
+      <div class="box book"><div class="bar2" style="background:var(--t-gd)"></div><b>Sächsischer Friedhof, Roseln</b>
+        <p>Grabsteine auf dem sächsischen Friedhof in Roseln, fotografiert von Randy Harris 2016 und 2018, mit Inschriften und Verweisen auf die Personen im Kirchenbuch.</p>
+        <div class="stats"><div><b>${(D.WP || []).filter(w => w.hs).length}</b>Fotos</div></div>
+        <div class="lbl">Grabsteine, sächsischer Friedhof Roseln (Randy Harris, 2016 und 2018)</div>${galGrid((D.WP || []).filter(w => w.hs))}</div>
       <div class="prose"><div class="lbl">Sprache</div>
         <p>Die Notizen beider Kirchenbücher erscheinen im Wortlaut der Bücher, ältere Einträge auf Latein. <a class="lnk" href="index.html" data-lang="en" lang="en">Roseln Families auf Englisch</a>.</p>
         <div class="lbl">Datenschutz</div><p>Das Roselner Buch endet mit den Geburten von 1925, daher sind fast alle darin Verzeichneten verstorben. Manche späteren Daten sind schon im Buch gesperrt und erscheinen als „Datum gesperrt“.</p>

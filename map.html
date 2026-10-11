@@ -32,6 +32,8 @@ img { max-width: 100%; }
 #fam-back svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 body.from-fam #map-title{top:64px}
 @media (max-width:760px){ body.from-fam #map-title{top:calc(60px + env(safe-area-inset-top,0px))} }
+@media (max-width:1100px){ body.from-fam #controls{top:112px} body.from-fam .maplibregl-ctrl-top-left{top:200px} }
+@media (max-width:760px){ body.from-fam #controls{top:calc(108px + env(safe-area-inset-top,0px))} }
 .hs-fam{display:block;margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:var(--rh-accent);color:#fff;font:600 13px var(--rh-font-ui);text-decoration:none;text-align:center}
 #house-card a.fl{color:var(--rh-accent);font-weight:600;text-decoration:underline;text-decoration-color:rgba(31,75,74,.35);text-underline-offset:2px}
 </style>
@@ -602,6 +604,19 @@ a.house-btn { text-decoration: none; }
   .pg-grid { height: 360px; grid-auto-columns: 124px; }
   #panel[data-view="details"], #panel[data-view="tree"] { max-height: 72%; }
 }
+
+/* film markers and player */
+.film-mk { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 4px; border-radius: 999px; background: var(--rh-paper-solid); border: 1px solid var(--rh-hairline); box-shadow: 0 2px 8px rgba(0,0,0,.3); font: 600 11.5px/1.15 var(--rh-font-ui); color: var(--rh-ink); white-space: nowrap; }
+.film-mk i { width: 22px; height: 22px; border-radius: 50%; background: var(--rh-accent); display: grid; place-items: center; flex: none; }
+.film-mk i:after { content: ""; border-left: 8px solid #fff; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
+.film-mk small { display: block; font-weight: 400; font-size: 10px; color: var(--rh-ink-soft); }
+.filmbox { position: fixed; inset: 0; z-index: 60; background: rgba(10,10,10,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+.filmbox .fb-bar { width: min(960px,100%); display: flex; align-items: center; gap: 10px; color: #fff; margin-bottom: 10px; font: 14px var(--rh-font-ui); }
+.filmbox .fb-bar b { flex: 1; min-width: 0; }
+.filmbox button { background: #fff; color: #111; border: 0; border-radius: 999px; padding: 7px 14px; font: 600 13px var(--rh-font-ui); cursor: pointer; }
+.filmbox .fb-v { width: min(960px,100%); aspect-ratio: 16/9; max-height: calc(100vh - 140px); background: #000; border-radius: 10px; overflow: hidden; }
+.filmbox iframe { width: 100%; height: 100%; border: 0; display: block; }
+.filmbox p { color: #ccc; font: 12px var(--rh-font-ui); margin: 10px 0 0; max-width: 960px; text-align: center; }
 </style>
 
 <div id="app">
@@ -685,7 +700,7 @@ a.house-btn { text-decoration: none; }
     <button id="ctl-toggle" class="glass" type="button" aria-expanded="false">Map options</button>
     <div id="basemap" class="glass" role="group" aria-label="Basemap">
       <button type="button" class="bm-btn on" data-bm="satellite">Satellite</button>
-      <button type="button" class="bm-btn" data-bm="plain">Plain</button>
+      <button type="button" class="bm-btn" data-bm="plain">Plan</button>
     </div>
     <div class="card glass">
       <div class="card-title">1869 village map <span class="hint">Weiss p.455</span></div>
@@ -1010,6 +1025,19 @@ fetch('data/people.json').then(r => { if (!r.ok) throw new Error(r.status); retu
   ptog.addEventListener('click', () => setPanel(panel.classList.contains('collapsed')));
   if (window.matchMedia('(max-width: 1100px)').matches) setPanel(false);
   const ctl = document.getElementById('controls'), ctog = document.getElementById('ctl-toggle');
+  // keep Map options and the Satellite / Plan switch below the title bar on phones and tablets
+  function placeCtl() {
+    const title = document.getElementById('map-title'), host = ctl.offsetParent || document.body;
+    if (!window.matchMedia('(max-width: 1100px)').matches || !title) { ctl.style.top = ''; return; }
+    const tb = title.getBoundingClientRect().bottom - host.getBoundingClientRect().top;
+    ctl.style.top = Math.round(tb + 8) + 'px';
+    const tl = document.querySelector('.maplibregl-ctrl-top-left'), bm = document.getElementById('basemap');
+    if (tl && bm) tl.style.top = Math.round(bm.getBoundingClientRect().bottom - host.getBoundingClientRect().top + 8) + 'px';
+  }
+  window.addEventListener('resize', placeCtl); window.addEventListener('load', placeCtl);
+  if (window.ResizeObserver) new ResizeObserver(placeCtl).observe(document.getElementById('map-title'));
+  setTimeout(placeCtl, 0); setTimeout(placeCtl, 800);
+  new MutationObserver(placeCtl).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   ctog.addEventListener('click', () => { const o = !ctl.classList.contains('open'); ctl.classList.toggle('open', o); ctog.setAttribute('aria-expanded', o); });
 
   // ---------- search ----------
@@ -1805,6 +1833,26 @@ fetch('data/people.json').then(r => { if (!r.ok) throw new Error(r.status); retu
     if (map.getLayer('ref')) map.setLayoutProperty('ref', 'visibility', lblOn.checked ? 'visible' : 'none');
   }
   map.on('zoom', showPlaces); lblOn.addEventListener('change', showPlaces); showPlaces();
+
+  // ---------- film: Johann Balthes and Sofia Thome, about 1959-1963 (YouTube) ----------
+  const FILM = { yt: '2Xs7f-gKGGo', t: 'Film: Johann Balthes and Sofia Thome, about 1959–1963' };
+  function openFilm() {
+    const o = document.createElement('div'); o.className = 'filmbox'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', FILM.t);
+    o.innerHTML = `<div class="fb-bar"><b>${esc(FILM.t)}</b><button type="button" class="fbx">Close</button></div><div class="fb-v"><iframe src="https://www.youtube-nocookie.com/embed/${FILM.yt}?autoplay=1&rel=0&playsinline=1" title="${esc(FILM.t)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div><p>Home-movie clips of Johann Balthes and Sofia Thome, filmed in Malahide Township and Norfolk Township, Ontario. Plays from YouTube; needs an internet connection.</p>`;
+    document.body.appendChild(o);
+    const close = () => { o.remove(); document.removeEventListener('keydown', k); };
+    const k = e => { if (e.key === 'Escape') close(); };
+    o.querySelector('.fbx').onclick = close; o.addEventListener('click', e => { if (e.target === o) close(); }); document.addEventListener('keydown', k);
+  }
+  const FILM_PLACES = [{ n: 'Malahide Township', ll: [-80.98, 42.76], a: 'right' }, { n: 'Norfolk Township', ll: [-80.52, 42.67], a: 'left' }];
+  const filmMarkers = FILM_PLACES.map(p => {
+    const el = document.createElement('button'); el.type = 'button'; el.className = 'film-mk'; el.title = FILM.t;
+    el.innerHTML = `<i></i><span>${esc(p.n)}<small>Film, 1959–63</small></span>`;
+    el.addEventListener('click', e => { e.stopPropagation(); openFilm(); });
+    return new maplibregl.Marker({ element: el, anchor: p.a }).setLngLat(p.ll).addTo(map);
+  });
+  function showFilm() { const z = map.getZoom(); filmMarkers.forEach(m => m.getElement().style.display = z >= 6.5 && z <= 13 ? '' : 'none'); }
+  map.on('zoom', showFilm); showFilm();
 
   // ---------- keep the timeline clear of any host badge (e.g. Netlify's) ----------
   function fitBadge() {
