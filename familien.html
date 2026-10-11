@@ -373,7 +373,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   <div class="eyebrow">Roseln Familien</div>
   <div style="font:600 22px var(--serif)">Die Bücher werden geöffnet …</div>
   <div class="bar"><i id="ldbar"></i></div>
-  <div class="sub" id="ldtxt">8.224 Personen werden geladen</div>
+  <div class="sub" id="ldtxt">Die Personen werden geladen</div>
 </div>
 
 <div id="app">
@@ -428,7 +428,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   const tagHTML = t => `<span class="tag ${t}">${TAGS[t]}</span>`;
 
   // ---------------- data ----------------
-  let D, O, PP, IDS, IDX, L, H, PH, SV, LOCS, RAW, KIDS, FAMNO, SEARCH;
+  let D, O, PP, IDS, IDX, L, H, PH, SV, LOCS, RAW, KIDS, FAMNO, SEARCH, TS = {}, TV = {}, LV = new Set();
   async function getJSON(url, part) {
     const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status);
     const total = +r.headers.get('content-length') || 0;
@@ -440,6 +440,8 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
   }
   function prep() {
     PP = D.P; IDS = D.IDS; L = D.L || {}; H = D.H || {}; PH = D.PH || {}; SV = D.SV || {}; LOCS = D.LOC || {};
+    // from the Harris family tree: marriages (TS), birth and death places (TV), people who may be living (LV)
+    TS = D.TS || {}; TV = D.TV || {}; LV = new Set(D.LV || []);
     IDX = new Map(IDS.map((id, i) => [id, i]));
     RAW = new Map(); D.R.forEach(rw => { if (!RAW.has(rw[0])) RAW.set(rw[0], []); RAW.get(rw[0]).push(rw); });
     KIDS = new Map(); FAMNO = new Map();
@@ -498,18 +500,21 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     draw();
   }
   const byear = i => +pyear(PP[i][2]) || (+pyear(PP[i][3]) ? +pyear(PP[i][3]) - 40 : 9999);
-  const nm = i => titleName(PP[i][0]);
+  const isTree = i => PP[i][7] === 't'; // added from the family tree, not in the church books
+  const nm = i => LV.has(i) ? (PP[i][0] ? `${titleName(PP[i][0])} (lebend)` : 'lebend') : titleName(PP[i][0]);
   const first = i => nm(i).split(' ')[0];
   const nick = i => PP[i][1] ? titleName(PP[i][1]).replace(/\.(?=\S)/g, ' ').replace(/[:.\s]+$/, '') : '';
-  const span = i => { const b = pyear(PP[i][2]), d = pyear(PP[i][3]); return b && d ? `${b}–${d}` : b ? `geb. ${b}` : d ? `gest. ${d}` : 'Daten nicht verzeichnet'; };
+  const span = i => { if (LV.has(i)) return 'lebend'; const b = pyear(PP[i][2]), d = pyear(PP[i][3]); return b && d ? `${b}–${d}` : b ? `geb. ${b}` : d ? `gest. ${d}` : 'Daten nicht verzeichnet'; };
   const ini = i => nm(i).replace(/[^\p{L}\s]/gu, '').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('');
   const av = (i, cls = '') => { const ph = PH[String(i)]; return `<span class="av ${cls}" ${ph ? `style="background-image:url('${esc(ph)}')" role="img" aria-label="Foto von ${esc(nm(i))}"` : 'aria-hidden="true"'}>${ph ? '' : esc(ini(i))}</span>`; };
   const kidsOf = i => KIDS.get(i) || [];
   const plink = (i, cls = 'lnk') => `<a class="${cls}" href="#p=${encodeURIComponent(IDS[i])}">${esc(nm(i))}</a>`;
   const pspan = i => `${plink(i)} <small class="muted">${esc(span(i))}</small>`;
   function spousesOf(i) {
-    const p = PP[i]; if (p[7] === 'c') return [];
-    return (FAMNO.get(p[6]) || []).filter(j => j !== i && PP[j][7] !== 'c' && PP[j][7] !== p[7]);
+    const p = PP[i], tree = TS[i] || [];
+    if (p[7] === 'c' || p[7] === 't') return tree.slice();
+    const book = (FAMNO.get(p[6]) || []).filter(j => j !== i && PP[j][7] !== 'c' && PP[j][7] !== p[7]);
+    return book.concat(tree.filter(j => !book.includes(j)));
   }
   function siblingsOf(i) {
     const p = PP[i], s = new Set();
@@ -560,6 +565,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       if (rw[1][0] === 'V' && rw[1] !== 'VRoseln') out.away.push({ code: rw[1], y0: rw[2], y1: rw[3], what: rw[6], note: rw[10] || '', de: rw[11] || rw[10] || '', tree: fromTree(rw) });
     });
     out.homes.sort((a, b) => a.y0 - b.y0);
+    const tv = TV[i]; if (tv) { out.bornAt = out.bornAt || tv[0]; if (tv[1]) { out.diedAt = tv[1]; out.diedTree = true; } }
     return out;
   }
   // "Weiss 2010 p.142" -> (Weiss); "Family book (church-council minutes)" -> (church-council minutes)
@@ -582,7 +588,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const k = String(i), o = O ? O[k] || {} : {}, l = L[k] || {};
     const ln = l.notes || [];
     return {
-      ch: !!(O && O[k]), we: ln.some(n => /Weiss/.test(n[1])), mg: !!o.mg, gd: !!PH[k] || (RAW.get(i) || []).some(rw => /Family tree/i.test(rw[10] || '')),
+      ch: !!(O && O[k]), we: ln.some(n => /Weiss/.test(n[1])), mg: !!o.mg, gd: !!PH[k] || isTree(i) || !!TS[k] || (RAW.get(i) || []).some(rw => /Family tree/i.test(rw[10] || '')),
       stories: ln.length + (o.notes || []).length + ((o.mg || {}).notes || []).length,
       emi: !!(o.emi || (o.mg || {}).emi || (RAW.get(i) || []).some(rw => /emigrat|Canada|USA/i.test(rw[6] + ' ' + (rw[10] || '')))),
       off: (l.roles || []).length > 0 || !!o.title
@@ -655,7 +661,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     if (v.homes.length) bits.push(esc(houseName(v.homes.slice().sort((x, y) => (y.y1 - y.y0) - (x.y1 - x.y0))[0].h)));
     if (o.emi) bits.push('ausgewandert' + (o.emi[1] && o.emi[1] !== 'Datum gesperrt' ? ' nach ' + esc(o.emi[1]) : ''));
     else if (v.away.length) bits.push('nach ' + esc(PLACE(v.away[v.away.length - 1].code).split(',')[0]));
-    if (!bits.length) bits.push('Familie ' + esc(PP[i][6]));
+    if (!bits.length) bits.push(isTree(i) ? 'Stammbaum Harris' : 'Familie ' + esc(PP[i][6]));
     return bits.join(' · ');
   }
   function rowHTML(i) {
@@ -706,13 +712,14 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const bAt = o.bp || v.bornAt, dAt = v.diedTree && v.diedAt ? v.diedAt : o.dp ? o.dp.replace(/^in /, '') : v.diedAt;
     const main = v.homes.slice().sort((x, y) => (y.y1 - y.y0) - (x.y1 - x.y0))[0];
     const life = [b ? `${b}${bAt ? ', ' + bAt : ''}` : (bAt ? 'geboren in ' + bAt : ''), d ? `${d}${dAt ? ', ' + dAt : ''}` : (dAt && dAt !== bAt ? 'gestorben in ' + dAt : '')].filter(Boolean);
-    const line = [l.occ, main ? houseName(main.h) : '', 'Familie ' + (o.src || p[6])].filter(Boolean).join(' · ');
+    const line = [l.occ, main ? houseName(main.h) : '', isTree(i) ? 'Stammbaum Harris' : 'Familie ' + (o.src || p[6])].filter(Boolean).join(' · ');
     const tabs = [['family', 'Familie'], ['life', 'Leben'], ['records', 'Einträge'], ['homes', 'Häuser']];
     return `<div class="bar" id="pbar"><a href="#find" aria-label="Zurück zur Suche">${ICO.back}<span>Suchen</span></a><span class="t">${esc(nm(i))}</span><button type="button" id="share" aria-label="Link zu ${esc(nm(i))} teilen">${ICO.share}</button></div>
       <div class="ph">${av(i)}<div style="min-width:0"><h2>${esc(nm(i))}</h2>${nick(i) ? `<span class="nick">„${esc(nick(i))}“</span>` : ''}
-      <div class="d">${esc(life.join(' – ')) || 'Daten nicht verzeichnet'}</div><div class="d2">${esc(line)}</div></div></div>
-      <div class="acts"><a class="btn" href="${mapP(i)}">${ICO.map}Auf der Karte zeigen</a>${PHBY.has(i) ? `<button type="button" class="btn" data-phl="${i}">${ICO.photo}${PHBY.get(i).length === 1 ? 'Auf einem Foto' : `Auf ${PHBY.get(i).length} Fotos`}</button>` : ''}${HSBY.has(i) ? `<button type="button" class="btn" data-hsl="${i}">${ICO.photo}${HSBY.get(i).length === 1 ? 'Grabstein' : `Grabstein (${HSBY.get(i).length} Fotos)`}</button>` : ''}${p[4] >= 0 || p[5] >= 0 || kidsOf(i).length ? `<a class="btn" href="#p=${encodeURIComponent(IDS[i])}&t=family&m=pedigree">Ahnentafel</a>` : ''}</div>
+      <div class="d">${esc(life.join(' – ')) || (LV.has(i) ? 'lebend' : 'Daten nicht verzeichnet')}</div><div class="d2">${esc(line)}</div></div></div>
+      <div class="acts">${isTree(i) ? '' : `<a class="btn" href="${mapP(i)}">${ICO.map}Auf der Karte zeigen</a>`}${PHBY.has(i) ? `<button type="button" class="btn" data-phl="${i}">${ICO.photo}${PHBY.get(i).length === 1 ? 'Auf einem Foto' : `Auf ${PHBY.get(i).length} Fotos`}</button>` : ''}${HSBY.has(i) ? `<button type="button" class="btn" data-hsl="${i}">${ICO.photo}${HSBY.get(i).length === 1 ? 'Grabstein' : `Grabstein (${HSBY.get(i).length} Fotos)`}</button>` : ''}${p[4] >= 0 || p[5] >= 0 || kidsOf(i).length ? `<a class="btn" href="#p=${encodeURIComponent(IDS[i])}&t=family&m=pedigree">Ahnentafel</a>` : ''}</div>
       ${l.flag ? `<div class="flag"><span aria-hidden="true">⚑</span><span>${esc(l.flag)}</span></div>` : ''}
+      ${LV.has(i) ? `<div class="flag"><span aria-hidden="true">⚑</span><span>Diese Person lebt möglicherweise noch; daher wird nur ihr Platz in der Familie gezeigt.</span></div>` : ''}
       <nav class="ptabs" aria-label="Über ${esc(nm(i))}">${tabs.map(([t, n]) => `<a href="#p=${encodeURIComponent(IDS[i])}&t=${t}" aria-current="${t === tab}">${n}</a>`).join('')}</nav>`;
   }
   function renderPerson(i, tab) {
@@ -736,6 +743,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     return `<a class="card ${cls}" href="#p=${encodeURIComponent(IDS[j])}">${av(j)}<span style="min-width:0"><span class="nm" style="display:block">${esc(nm(j))}</span><span class="yr" style="display:block">${esc(span(j))}</span></span>${extra}</a>`;
   }
   function weddingOf(h, w) { // date of the marriage between a husband h and wife w, from the church book
+    if (h < 0 || w < 0 || isTree(h) || isTree(w) || (TS[h] || []).includes(w)) return '';
     const o = O[String(h)] || {}; const mar = o.mar || {};
     for (const mk of Object.keys(mar)) { if (spByOrder(h, +mk) === w) { const m = mar[mk]; return (m.wed && m.wed[0]) || (m.civ && m.civ[0]) || (m.eng && m.eng[0] && 'verlobt ' + m.eng[0]) || ''; } }
     const m = Object.values(mar)[0]; return m ? (m.wed && m.wed[0]) || '' : '';
@@ -848,7 +856,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       let b = `Geboren ${esc(fmtOfb(p[2]) || '(Datum nicht verzeichnet)')}${o.bp ? ', ' + esc(o.bp) : v.bornAt ? ', ' + esc(v.bornAt) : ''}.`;
       if (o.bap) b += ` Getauft ${at(o.bap[0], o.bap[1] !== o.bp ? o.bap[1] : '')}${byX(o.bap[2])}.`;
       if ((o.gp || []).length) b += `<br><span class="muted">Paten:</span> ${o.gp.map(([n, f]) => gpLink(n, f)).join(', ')}`;
-      add(by, o.bap ? 'Geboren und getauft' : 'Geboren', `<p>${b}</p>${(o.lat || []).length ? quote(o.lat[0]) : ''}`, ['ch'], { birth: 1 });
+      add(by, o.bap ? 'Geboren und getauft' : 'Geboren', `<p>${b}</p>${(o.lat || []).length ? quote(o.lat[0]) : ''}`, [isTree(i) ? 'gd' : 'ch'], { birth: 1 });
     }
     if (o.vac) add(yOf(o.vac[0]), 'Gegen Pocken geimpft', `<p>${at(o.vac[0], o.vac[1])}${o.vac[2] ? byX(o.vac[2]) : ''}</p>`, ['ch'], { minor: 1, dt: o.vac[0] });
     if (o.conf) add(yOf(o.conf[0]), 'Konfirmiert', `<p>${at(o.conf[0], o.conf[1])}${byX(o.conf[2])}</p>`, ['ch'], { dt: o.conf[0] });
@@ -869,7 +877,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     });
     if (!mkeys.length) v.mar.forEach(m => add(yOf(m.d), m.who ? `Heiratet ${esc(titleName(m.who))}` : 'Heirat', `<p>${esc(fmtIso(m.d))}${m.at ? ', ' + esc(m.at) : ''}</p>`, ['ch'], { raw: 1, dt: m.d }));
     // children
-    kidsOf(i).forEach(j => { add(yOf(PP[j][2]) || null, `${PP[j][2] ? 'Kind geboren' : 'Kind'}: ${plink(j)}${PP[j][3] && pyear(PP[j][3]) - pyear(PP[j][2]) < 3 ? ' <span class="muted">(früh verstorben)</span>' : ''}`, '', ['ch'], { minor: 1, raw: 1, dt: PP[j][2] }); });
+    kidsOf(i).forEach(j => { add(yOf(PP[j][2]) || null, `${PP[j][2] ? 'Kind geboren' : 'Kind'}: ${plink(j)}${PP[j][3] && pyear(PP[j][3]) - pyear(PP[j][2]) < 3 ? ' <span class="muted">(früh verstorben)</span>' : ''}`, '', [isTree(j) ? 'gd' : 'ch'], { minor: 1, raw: 1, dt: PP[j][2] }); });
     // homes and places away
     v.homes.forEach(x => {
       const Hh = H[x.h], lists = Hh && Hh.lists.length ? `<p class="muted">Besitzer laut Hauslisten: ${Hh.lists.map(([y, n]) => `${esc(y)} ${esc(n)}`).join(' · ')} <span class="w">(Weiss)</span></p>` : '';
@@ -907,7 +915,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       let b = `Gestorben ${esc(fmtOfb(p[3]) || (o.dp ? '(Datum gesperrt)' : ''))}${v.diedTree && v.diedAt ? ', ' + esc(v.diedAt) : o.dp ? ', ' + esc(o.dp.replace(/^in /, '')) : v.diedAt ? ', ' + esc(v.diedAt) : ''}${cause || age ? ` <span class="muted">${[cause && 'an ' + cause, age].filter(Boolean).map(esc).join(', ')}</span>` : ''}.`;
       if (bur) b += ` Begraben ${at(bur[0], bur[1] !== o.dp ? bur[1] : '')}${byX(bur[2])}.`;
       const y = yOf(p[3]) || yOf(bur && bur[0]);
-      add(y, 'Gestorben', `<p>${b}</p>`, o.dp || o.cause || o.bur ? (v.diedTree ? ['ch', 'gd'] : ['ch']) : MG.cause || MG.bur ? ['mg'] : v.diedTree ? ['gd'] : ['ch'], { death: 1, dt: p[3] || (bur && bur[0]) });
+      add(y, 'Gestorben', `<p>${b}</p>`, isTree(i) ? ['gd'] : o.dp || o.cause || o.bur ? (v.diedTree ? ['ch', 'gd'] : ['ch']) : MG.cause || MG.bur ? ['mg'] : v.diedTree ? ['gd'] : ['ch'], { death: 1, dt: p[3] || (bur && bur[0]) });
     }
     if (FILM.ppl.includes(i)) add(FILM.y, 'Film: Johann Balthes und Sofia Thome, um 1959–1963', `<p>Filmaufnahmen der Familie aus Malahide Township und Norfolk Township, Ontario.</p>${filmCard()}`, ['gd'], { film: 1 });
     ageMark(E, p[2] || (o.bap && o.bap[0]), p[3]);
@@ -997,9 +1005,20 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
       h += recBox('var(--t-mg)', 'Ortsfamilienbuch Magarei', `Kirchenbuch des Nachbardorfs · Familie ${esc(MG.fam)}`, m);
     }
     // family tree
-    const tr = (RAW.get(i) || []).filter(rw => /Family tree/i.test(rw[10] || ''));
-    if (tr.length || PH[k]) {
+    const tr = (RAW.get(i) || []).filter(rw => /Family tree/i.test(rw[10] || '')), tsp = TS[k] || [];
+    if (tr.length || PH[k] || isTree(i) || tsp.length) {
       let g = PH[k] ? `<p class="note">Foto aus dem Stammbaum.</p>` : '';
+      const kt = [];
+      if (LV.has(i)) g += `<p class="note">Diese Person lebt möglicherweise noch; daher wird nur ihr Platz in der Familie gezeigt.</p>`;
+      else if (isTree(i)) {
+        const tv = TV[k] || [];
+        if (p[2] || tv[0]) kt.push(['Geboren', esc([fmtOfb(p[2]), tv[0]].filter(Boolean).join(', '))]);
+        if (p[3] || tv[1]) kt.push(['Gestorben', esc([fmtOfb(p[3]), tv[1]].filter(Boolean).join(', '))]);
+      }
+      if (isTree(i)) { const par = [p[4], p[5]].filter(q => q >= 0); if (par.length) kt.push(['Eltern', par.map(pspan).join('<br>')]); }
+      if (tsp.length) kt.push(['Verheiratet mit', tsp.map(pspan).join('<br>')]);
+      if (isTree(i) && kidsOf(i).length) kt.push(['Kinder', `${kidsOf(i).length} · <a class="lnk" href="#p=${encodeURIComponent(IDS[i])}&t=family">zur Familie</a>`]);
+      if (kt.length) g += `<dl class="kv">${kt.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
       if (tr.length) g += `<ul class="ul">${tr.map(rw => `<li><b>${rw[2] === rw[3] ? rw[2] : `${rw[2]}–${rw[3]}`}</b> · ${esc(PLACE(rw[1]))}: ${esc((rw[11] || rw[10] || '').split(/;\s*/).filter(s => /Family tree|Stammbaum/i.test(s)).map(s => s.replace(/^(Family tree|Stammbaum):\s*/i, '')).join('; '))}</li>`).join('')}</ul>`;
       h += recBox('var(--t-gd)', 'Stammbaum', 'Stammbaum der Familie Harris (GED)', g);
     }
@@ -1013,7 +1032,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     if (v.homes.length) h += v.homes.map(x => { const Hh = H[x.h]; return `<a class="box hcard" href="#h=${encodeURIComponent(x.h)}">${D.HPX[x.h] ? `<span class="hthumb">${plot(x.h, 640, 260, 1.0)}</span>` : ''}<span class="yrs">${x.y0 === x.y1 ? x.y0 : `${x.y0}–${x.y1}`}</span><b>${esc(houseName(x.h))}</b>${Hh ? `<p>${esc(Hh.note || '')}</p>${Hh.lists.length ? `<div class="lists">${Hh.lists.map(([y, n]) => `<b>${esc(y)}</b><span>${esc(n)}</span>`).join('')}</div><p class="src">Hauslisten <span class="w">(Weiss)</span></p>` : ''}` : '<p>Keine Hausgeschichte verzeichnet.</p>'}</a>`; }).join('');
     else h += `<div class="empty">Für ${esc(first(i))} ist kein Haus in Roseln verzeichnet.</div>`;
     if (v.away.length) h += `<div class="lbl">Anderswo</div><div class="box" style="padding:4px 14px"><ul class="hh">${v.away.map(a => `<li><span class="y">${a.y0 === a.y1 ? a.y0 : `${a.y0}–${a.y1}`}</span><span>${esc(PLACE(a.code))} ${a.tree ? tagHTML('gd') : tagHTML('ch')}</span></li>`).join('')}</ul></div>`;
-    h += `<div class="acts" style="margin-top:16px"><a class="btn pri" href="${mapP(i, '&t=homes')}">${ICO.map}Familie von ${esc(first(i))} auf der Karte</a></div>`;
+    if (!isTree(i)) h += `<div class="acts" style="margin-top:16px"><a class="btn pri" href="${mapP(i, '&t=homes')}">${ICO.map}Familie von ${esc(first(i))} auf der Karte</a></div>`;
     return h;
   }
 
