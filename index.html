@@ -154,6 +154,32 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
 .flag{margin-top:12px;background:#fbf1de;border-radius:10px;padding:9px 11px;font-size:13px;line-height:1.45;color:#6e4a12;display:flex;gap:8px}
 .ptabs{display:flex;margin-top:14px;border-bottom:1px solid var(--line);position:sticky;top:calc(48px + env(safe-area-inset-top,0px));background:var(--paper);z-index:4}
 .ptabs a{flex:1;text-align:center;padding:10px 0 11px;font:600 14px var(--ui);color:var(--faint);position:relative;text-decoration:none}
+/* how are we related */
+.relme{display:inline-block;margin-top:5px;font:600 12.5px var(--ui);color:var(--accent);background:rgba(31,75,74,.08);border-radius:999px;padding:3px 10px;text-decoration:none}
+.rel-intro{margin:0 0 10px;font-size:13.5px;line-height:1.5;color:var(--soft)}
+.rel-s input{width:100%;box-sizing:border-box;font:15px var(--ui);padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+.rel-s input:focus{outline:2px solid var(--accent);outline-offset:1px}
+#relhits .res{margin-top:8px}
+.rel-chips{margin-top:10px;align-items:center;flex-wrap:wrap}
+.rel-chips a.chip{text-decoration:none}
+.rel-rl{font:600 11px var(--ui);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:0 2px 0 6px}
+.rel-me{margin-top:10px;background:none;border:1px dashed var(--line);border-radius:999px;padding:6px 12px;font:600 12.5px var(--ui);color:var(--accent);cursor:pointer}
+.rel-me[aria-pressed=true]{border-style:solid;background:rgba(31,75,74,.08)}
+.rel-res{margin-top:16px;padding:14px 16px;border-left:4px solid var(--accent)}
+.rel-t{font:600 21px var(--serif);color:var(--ink);line-height:1.25}
+.rel-t:first-letter{text-transform:uppercase}
+.rel-say{margin:6px 0 0;font-size:14px;line-height:1.55}
+.rl{margin-top:6px}
+.rl-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;position:relative;padding-bottom:14px}
+.rl-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;padding-top:14px;border-top:2px solid var(--line)}
+.rl-cols.one{grid-template-columns:1fr;border-top:0;padding-top:0}
+.rl-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.rl-col>.card,.rl-col>.rl-m{position:relative}
+.rl-col>*+*:before{content:"";position:absolute;left:26px;top:-14px;height:14px;border-left:2px solid var(--line)}
+.rl-m{font-size:13px;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.035)}
+.rl-more{margin-top:8px;padding:10px 12px}
+.rl-more summary{cursor:pointer;font-weight:600;font-size:14px}
+.rl-more summary:first-letter{text-transform:uppercase}
 .ptabs a[aria-current=true]{color:var(--accent)}
 .ptabs a[aria-current=true]:after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
 .seg{display:flex;margin:14px 0 0;background:#ebe5d7;border-radius:10px;padding:3px}
@@ -646,7 +672,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const tabName = name === 'house' ? 'village' : name;
     document.querySelectorAll('#tabbar a, .topnav a').forEach(a => { if (a.dataset.tab === tabName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     const view = $('#view');
-    if (name === 'person') { const i = IDX.get(r.p); ST.last = i; renderPerson(i, r.t || ST.tab[i] || 'family'); }
+    if (name === 'person') { const i = IDX.get(r.p); ST.last = i; ST.recent = [i, ...(ST.recent || []).filter(x => x !== i)].slice(0, 8); renderPerson(i, r.t || ST.tab[i] || 'family'); }
     else if (name === 'house') renderHouse(r.h);
     else if (name === 'village') renderVillage(r.v || ST.vMode);
     else if (name === 'books') { renderBooks(); if (r.g) requestAnimationFrame(() => { const g = document.getElementById('gal-h'); if (g) g.scrollIntoView({ block: 'start' }); }); }
@@ -745,10 +771,10 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     const main = v.homes.slice().sort((x, y) => (y.y1 - y.y0) - (x.y1 - x.y0))[0];
     const life = [b ? `${b}${bAt ? ', ' + bAt : ''}` : (bAt ? 'Born in ' + bAt : ''), d ? `${d}${dAt ? ', ' + dAt : ''}` : (dAt && dAt !== bAt ? 'died in ' + dAt : '')].filter(Boolean);
     const line = [l.occ, main ? houseName(main.h) : '', isTree(i) ? 'Harris family tree' : 'family ' + (o.src || p[6])].filter(Boolean).join(' · ');
-    const tabs = [['family', 'Family'], ['life', 'Life'], ['records', 'Records'], ['homes', 'Homes']];
+    const tabs = [['family', 'Family'], ['life', 'Life'], ['records', 'Records'], ['homes', 'Homes'], ['rel', REL.ui.tab]];
     return `<div class="bar" id="pbar"><a href="#find" aria-label="Back to Find">${ICO.back}<span>Find</span></a><span class="t">${esc(nm(i))}</span><button type="button" id="share" aria-label="Share a link to ${esc(nm(i))}">${ICO.share}</button></div>
       <div class="ph">${av(i)}<div style="min-width:0"><h2>${esc(nm(i))}</h2>${nick(i) ? `<span class="nick">„${esc(nick(i))}“</span>` : ''}
-      <div class="d">${esc(life.join(' – ')) || (LV.has(i) ? 'Living' : 'Dates not recorded')}</div><div class="d2">${esc(line)}</div></div></div>
+      <div class="d">${esc(life.join(' – ')) || (LV.has(i) ? 'Living' : 'Dates not recorded')}</div><div class="d2">${esc(line)}</div>${relMe(i)}</div></div>
       <div class="acts">${isTree(i) ? '' : `<a class="btn" href="${mapP(i)}">${ICO.map}Show on the map</a>`}${PHBY.has(i) ? `<button type="button" class="btn" data-phl="${i}">${ICO.photo}${PHBY.get(i).length === 1 ? 'In a photograph' : `In ${PHBY.get(i).length} photographs`}</button>` : ''}${HSBY.has(i) ? `<button type="button" class="btn" data-hsl="${i}">${ICO.photo}${HSBY.get(i).length === 1 ? 'Headstone' : `Headstone (${HSBY.get(i).length} photos)`}</button>` : ''}${p[4] >= 0 || p[5] >= 0 || kidsOf(i).length ? `<a class="btn" href="#p=${encodeURIComponent(IDS[i])}&t=family&m=pedigree">Pedigree</a>` : ''}</div>
       ${l.flag ? `<div class="flag"><span aria-hidden="true">⚑</span><span>${esc(l.flag)}</span></div>` : ''}
       ${LV.has(i) ? `<div class="flag"><span aria-hidden="true">⚑</span><span>This person may be living, so only their place in the family is shown.</span></div>` : ''}
@@ -761,13 +787,195 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
     if (tab === 'life') body = lifeHTML(i);
     else if (tab === 'records') body = recordsHTML(i);
     else if (tab === 'homes') body = homesHTML(i);
+    else if (tab === 'rel') body = relHTML(i, r.w != null && IDX.has(r.w) ? IDX.get(r.w) : null);
     else body = familyHTML(i);
     $('#view').innerHTML = `<div class="wrap">${headerHTML(i, tab)}<div id="pbody">${body}</div></div>`;
+    const rq = $('#relq'); if (rq) rq.addEventListener('input', () => relSearch(i, rq.value));
     const sh = $('#share');
     sh.addEventListener('click', async () => {
       const url = location.href.split('#')[0] + '#p=' + encodeURIComponent(IDS[i]);
       try { if (navigator.share) { await navigator.share({ title: nm(i) + ' · Roseln Families', url }); return; } await navigator.clipboard.writeText(url); toast('Link copied'); } catch (e) { }
     });
+  }
+  // ---------------- HOW ARE WE RELATED? ----------------
+  // All wording is in this block; the German page replaces the whole block (german_ui.REL_DE).
+  /*REL-WORDS*/
+  const REL = {
+    G: (s, m, f, n) => s === 'm' ? m : s === 'f' ? f : n,
+    ord: x => ['', '1st', '2nd', '3rd'][x] || x + 'th',
+    times: x => ['', 'once', 'twice', 'three times'][x] || x + ' times',
+    greats: k => k <= 0 ? '' : k <= 2 ? 'great-'.repeat(k) : k + '× great-',
+    // what b is to a: ga and gb are the generations from a and from b up to their closest common ancestor
+    blood(ga, gb, s, half) {
+      const G = REL.G, h = half ? 'half-' : '';
+      if (!ga && !gb) return 'the same person';
+      if (!gb) return ga === 1 ? G(s, 'father', 'mother', 'parent') : REL.greats(ga - 2) + G(s, 'grandfather', 'grandmother', 'grandparent');
+      if (!ga) return gb === 1 ? G(s, 'son', 'daughter', 'child') : REL.greats(gb - 2) + G(s, 'grandson', 'granddaughter', 'grandchild');
+      if (ga === 1 && gb === 1) return h + G(s, 'brother', 'sister', 'brother or sister');
+      if (ga === 1) return h + (gb > 2 ? REL.greats(gb - 3) + 'grand' : '') + G(s, 'nephew', 'niece', 'nephew or niece');
+      if (gb === 1) return h + (ga > 2 ? REL.greats(ga - 3) + 'great-' : '') + G(s, 'uncle', 'aunt', 'uncle or aunt');
+      const d = Math.min(ga, gb) - 1, r = Math.abs(ga - gb);
+      return `${h}${REL.ord(d)} cousin${r ? ` ${REL.times(r)} removed` : ''}`;
+    },
+    spouse: s => REL.G(s, 'husband', 'wife', 'husband or wife'),
+    viaSpouse(l, s) { // b is related to a's husband or wife
+      if (l.ga === 1 && l.gb === 0) return REL.G(s, 'father-in-law', 'mother-in-law', 'parent-in-law');
+      if (l.ga === 1 && l.gb === 1) return REL.G(s, 'brother-in-law', 'sister-in-law', 'brother- or sister-in-law');
+      if (l.ga === 0 && l.gb === 1) return REL.G(s, 'stepson', 'stepdaughter', 'stepchild');
+      return '';
+    },
+    spouseOfRel(l, s) { // b is married to a's relative
+      if (l.ga === 1 && l.gb === 1) return REL.G(s, 'brother-in-law', 'sister-in-law', 'brother- or sister-in-law');
+      if (l.ga === 0 && l.gb === 1) return REL.G(s, 'son-in-law', 'daughter-in-law', 'son- or daughter-in-law');
+      if (l.ga === 1 && l.gb === 0) return REL.G(s, 'stepfather', 'stepmother', 'step-parent');
+      return '';
+    },
+    term(R) {
+      if (R.kind === 'self') return 'The same person';
+      if (R.kind === 'none') return 'No connection found';
+      return R.t || 'Related by marriage';
+    },
+    your(R, s) { return R.kind === 'none' || R.kind === 'self' ? '' : R.t ? `Your ${R.t}` : 'Related to you by marriage'; },
+    pos: (link, name) => link + (/s$/i.test(name) ? '’' : '’s'), // Balthes’, Harris’, Mathilde’s
+    // sentences: A, B, S, S2 are links to people; x = their sexes; n = their names
+    say(R, A, B, S, S2, x, n) {
+      const Ap = REL.pos(A, n.a), Bp = REL.pos(B, n.b);
+      switch (R.kind) {
+        case 'self': return `${A} and ${B} are the same person.`;
+        case 'none': return `No connection between ${A} and ${B} was found in the church books or the family tree.`;
+        case 'blood': case 'spouse': return `${B} is ${Ap} ${R.t}.`;
+        case 'ofSpouse': return R.t ? `${B} is ${Ap} ${R.t}: the ${R.rt} of ${S}, ${Ap} ${REL.spouse(x.s)}.` : `${B} is the ${R.rt} of ${S}, ${Ap} ${REL.spouse(x.s)}.`;
+        case 'spouseOf': return R.t ? `${B} is ${Ap} ${R.t}: the ${REL.spouse(x.b)} of ${S}, ${Ap} ${R.rt}.` : `${B} is the ${REL.spouse(x.b)} of ${S}, ${Ap} ${R.rt}.`;
+        case 'both': return `${S2} (${Bp} ${REL.spouse(x.s2)}) is the ${R.rt} of ${S} (${Ap} ${REL.spouse(x.s)}).`;
+      }
+      return '';
+    },
+    ui: {
+      tab: 'Related', head: 'How are we related?',
+      intro: n => `Choose a second person to see how they are related to ${n}, through the church books and the family tree.`,
+      ph: 'Name of the second person', search: 'Search for the second person',
+      me: 'This is me', notMe: 'This is you · not me', meChip: n => `Me: ${n}`, recent: 'Recently viewed',
+      meSet: 'Saved on this device: every page now shows how that person is related to you.', meOff: 'No longer marked as you.',
+      common1: 'Closest common ancestor', commonN: 'Closest common ancestors',
+      also: n => n === 1 ? 'Also related another way' : `Also related ${n} other ways`,
+      through: (t, who) => `${t}, through ${who}`, and: ' & ',
+      few: 'Type at least two letters.', noHit: 'Nobody found.',
+      note: 'Worked out from the parents recorded in the church books and the family tree. People who may be living count, but are shown without their details.'
+    }
+  };
+  /*/REL-WORDS*/
+  const ME_KEY = 'roseln-me';
+  const getMe = () => { try { const v = localStorage.getItem(ME_KEY); return v != null && IDX.has(v) ? IDX.get(v) : null; } catch (e) { return null; } };
+  const setMe = i => { try { if (i == null) localStorage.removeItem(ME_KEY); else localStorage.setItem(ME_KEY, IDS[i]); } catch (e) { } };
+  // sex, for the right word: family tree, then husband/wife in the church book, then father/mother of a child, then the first name
+  function sexOf(i) {
+    if (i == null || i < 0) return '';
+    const t = (D.SX || {})[i]; if (t) return t;
+    const p = PP[i]; if (p[7] === 'h') return 'm'; if (p[7] === 's') return 'f';
+    const k = KIDS.get(i); if (k && k.length) return PP[k[0]][4] === i ? 'm' : 'f';
+    if (LV.has(i)) return '';
+    const f = fold(p[0]).replace(/"[^"]*"/g, ' ').trim().split(/\s+/)[0] || '';
+    if (!f || f.length < 2) return '';
+    if ((/[ae]$/.test(f) && !/^(uwe|ove|rene|jose|mathe)$/.test(f)) || /^(elisabeth|agnes|margaret|margareth|gertrud|ruth|sarah|judith|ingrid|edith|helen|doris|karin|ellen|ann|lillian|carol|rachel|katherin|kathrin|regin)$/.test(f)) return 'f';
+    return 'm';
+  }
+  const ANCC = new Map();
+  function ancMap(i) { // person -> generations up to each ancestor (closest line)
+    if (ANCC.has(i)) return ANCC.get(i);
+    const m = new Map([[i, 0]]), q = [i];
+    while (q.length) { const x = q.shift(), g = m.get(x); [PP[x][4], PP[x][5]].forEach(y => { if (y >= 0 && !m.has(y)) { m.set(y, g + 1); q.push(y); } }); }
+    if (ANCC.size > 300) ANCC.clear();
+    ANCC.set(i, m); return m;
+  }
+  function upPath(a, c) { // [c, ..., a]: from the ancestor c down to a
+    const prev = new Map([[a, -1]]), q = [a];
+    while (q.length) { const x = q.shift(); if (x === c) break; [PP[x][4], PP[x][5]].forEach(y => { if (y >= 0 && !prev.has(y)) { prev.set(y, x); q.push(y); } }); }
+    const out = []; for (let x = c; x != null && x !== -1; x = prev.get(x)) out.push(x);
+    return out;
+  }
+  // blood lines between a and b: the closest first, then other lines through ancestors not already counted
+  function blood(a, b) {
+    const A = ancMap(a), B = ancMap(b);
+    let rest = []; A.forEach((_, x) => { if (B.has(x)) rest.push(x); });
+    if (!rest.length) return null;
+    const sum = x => A.get(x) + B.get(x);
+    rest.sort((x, y) => sum(x) - sum(y) || A.get(x) - A.get(y) || x - y);
+    const lines = [], covered = new Set();
+    while (rest.length && lines.length < 6) {
+      const c = rest[0], ga = A.get(c), gb = B.get(c), pa = upPath(a, c), pb = upPath(b, c);
+      let top = [c];
+      const ch = ga ? pa[1] : gb ? pb[1] : null;
+      if (ch != null) { const o = [PP[ch][4], PP[ch][5]].find(y => y >= 0 && y !== c); if (o != null && A.get(o) === ga && B.get(o) === gb) top = PP[ch][4] === c ? [c, o] : [o, c]; }
+      let half = false;
+      if (ga && gb && top.length === 1) {
+        const oth = j => [PP[j][4], PP[j][5]].find(y => y >= 0 && y !== c);
+        const oa = oth(pa[1]), ob = oth(pb[1]);
+        half = oa != null && ob != null && oa !== ob;
+      }
+      lines.push({ ga, gb, top, pa, pb, half });
+      top.forEach(t => ancMap(t).forEach((_, x) => covered.add(x)));
+      rest = rest.filter(x => !covered.has(x));
+    }
+    return lines;
+  }
+  function relate(a, b) {
+    if (a === b) return { kind: 'self' };
+    const L = blood(a, b);
+    if (L) return { kind: 'blood', lines: L, t: REL.blood(L[0].ga, L[0].gb, sexOf(b), L[0].half) };
+    if (spousesOf(a).includes(b)) return { kind: 'spouse', t: REL.spouse(sexOf(b)) };
+    let best = null;
+    const better = (R, n) => { if (!best || n < best.n) best = Object.assign(R, { n }); };
+    spousesOf(a).forEach(s => { const L2 = blood(s, b); if (L2) { const l = L2[0]; better({ kind: 'ofSpouse', s, l, x: s, y: b, t: REL.viaSpouse(l, sexOf(b)), rt: REL.blood(l.ga, l.gb, sexOf(b), l.half) }, l.ga + l.gb + 1); } });
+    spousesOf(b).forEach(s => { const L2 = blood(a, s); if (L2) { const l = L2[0]; better({ kind: 'spouseOf', s, l, x: a, y: s, t: REL.spouseOfRel(l, sexOf(b)), rt: REL.blood(l.ga, l.gb, sexOf(s), l.half) }, l.ga + l.gb + 1); } });
+    if (!best) spousesOf(a).forEach(s => spousesOf(b).forEach(s2 => { const L2 = blood(s, s2); if (L2) { const l = L2[0]; better({ kind: 'both', s, s2, l, x: s, y: s2, rt: REL.blood(l.ga, l.gb, sexOf(s2), l.half) }, l.ga + l.gb + 2); } }));
+    return best || { kind: 'none' };
+  }
+  // the line drawn: the common ancestor(s) on top, then each line of descent down to x and to y
+  function lineHTML(l, x, y, ex = {}) {
+    const mark = j => j === x || j === y ? 'me' : '';
+    const colA = l.pa.slice(1), colB = l.pb.slice(1);
+    const col = (list, extra) => `<div class="rl-col">${list.map(j => card(j, mark(j))).join('')}${extra || ''}</div>`;
+    return `<div class="rl"><div class="lbl" style="margin-top:4px">${l.top.length > 1 ? REL.ui.commonN : REL.ui.common1}</div>
+      <div class="rl-top">${l.top.map(t => card(t, mark(t))).join('')}${!colA.length ? ex.a || '' : ''}${!colB.length ? ex.b || '' : ''}</div>
+      ${colA.length || colB.length ? `<div class="rl-cols${colA.length && colB.length ? '' : ' one'}">${colA.length ? col(colA, ex.a) : ''}${colB.length ? col(colB, ex.b) : ''}</div>` : ''}</div>`;
+  }
+  function relResult(a, b) {
+    const R = relate(a, b), x = { a: sexOf(a), b: sexOf(b), s: sexOf(R.s), s2: sexOf(R.s2) };
+    let h = `<div class="box rel-res"><div class="rel-t">${esc(REL.term(R))}</div><p class="rel-say">${REL.say(R, plink(a), plink(b), R.s != null ? plink(R.s) : '', R.s2 != null ? plink(R.s2) : '', x, { a: nm(a), b: nm(b) })}</p></div>`;
+    const wed = j => `<div class="rl-m">⚭ ${plink(j)}</div>`;
+    if (R.kind === 'blood') {
+      h += lineHTML(R.lines[0], a, b);
+      const more = R.lines.slice(1);
+      if (more.length) h += `<div class="lbl">${REL.ui.also(more.length)}</div>${more.map(l => `<details class="box rl-more"><summary>${esc(REL.ui.through(REL.blood(l.ga, l.gb, sexOf(b), l.half), l.top.map(nm).join(REL.ui.and)))}</summary>${lineHTML(l, a, b)}</details>`).join('')}`;
+    } else if (R.kind === 'ofSpouse') h += lineHTML(R.l, R.x, R.y, { a: wed(a) });
+    else if (R.kind === 'spouseOf') h += lineHTML(R.l, R.x, R.y, { b: wed(b) });
+    else if (R.kind === 'both') h += lineHTML(R.l, R.x, R.y, { a: wed(a), b: wed(b) });
+    return h + `<p class="src" style="margin-top:12px">${REL.ui.note}</p>`;
+  }
+  function relHTML(i, w) {
+    const me = getMe(), j = w != null ? w : me != null && me !== i ? me : null;
+    const chip = (k, t) => `<a class="chip" href="#p=${encodeURIComponent(IDS[i])}&t=rel&w=${encodeURIComponent(IDS[k])}" aria-pressed="${k === j}">${esc(t)}</a>`;
+    const rec = (ST.recent || []).filter(k => k !== i && k !== me).slice(0, 5);
+    return `<div class="rel-pick"><div class="lbl">${REL.ui.head}</div>
+      <p class="rel-intro">${esc(REL.ui.intro(nm(i)))}</p>
+      <div class="rel-s"><input id="relq" type="search" placeholder="${REL.ui.ph}" aria-label="${REL.ui.search}" autocomplete="off" spellcheck="false"></div>
+      <div id="relhits"></div>
+      ${me != null && me !== i || rec.length ? `<div class="chips rel-chips">${me != null && me !== i ? chip(me, REL.ui.meChip(nm(me))) : ''}${rec.length ? `<span class="rel-rl">${REL.ui.recent}</span>${rec.map(k => chip(k, nm(k))).join('')}` : ''}</div>` : ''}
+      <button type="button" class="rel-me" data-me="${i}" aria-pressed="${me === i}">${me === i ? REL.ui.notMe : REL.ui.me}</button></div>
+      ${j != null ? `<div id="relout">${relResult(i, j)}</div>` : ''}`;
+  }
+  function relSearch(i, v) {
+    const box = $('#relhits'), q = fold(v.trim()).replace(/[^a-z0-9.\s]/g, ' ');
+    if (q.trim().length < 2) { box.innerHTML = v.trim() ? `<div class="empty" style="padding:10px 0">${REL.ui.few}</div>` : ''; return; }
+    const toks = q.split(/\s+/).filter(Boolean), hits = [];
+    for (let k = 0; k < PP.length && hits.length < 40; k++) if (k !== i && toks.every(t => SEARCH[k].includes(' ' + t))) hits.push(k);
+    hits.sort((x, y) => byear(x) - byear(y));
+    box.innerHTML = hits.length ? `<div class="box res">${hits.slice(0, 12).map(k => `<a class="row" href="#p=${encodeURIComponent(IDS[i])}&t=rel&w=${encodeURIComponent(IDS[k])}">${av(k)}<span style="min-width:0"><span><span class="nm">${esc(nm(k))}</span><span class="yr">${esc(span(k))}</span></span><span class="ln" style="display:block">${rowLine(k)}</span></span><span class="chev" aria-hidden="true">›</span></a>`).join('')}</div>` : `<div class="empty" style="padding:10px 0">${REL.ui.noHit}</div>`;
+  }
+  function relMe(i) { // the line under the name: how this person is related to "me"
+    const me = getMe(); if (me == null || me === i) return '';
+    const R = relate(me, i), t = REL.your(R, sexOf(i));
+    return t ? `<a class="relme" href="#p=${encodeURIComponent(IDS[i])}&t=rel&w=${encodeURIComponent(IDS[me])}">${esc(t)} ›</a>` : '';
   }
   // ---- family
   function card(j, cls = '', extra = '') {
@@ -1232,6 +1440,7 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display
 
   // ---------------- events ----------------
   document.addEventListener('click', e => {
+    const mb = e.target.closest('[data-me]'); if (mb) { const k = +mb.dataset.me, was = getMe() === k; setMe(was ? null : k); toast(was ? REL.ui.meOff : REL.ui.meSet); renderPerson(k, 'rel'); return; }
     const b = e.target.closest('[data-fm]'); if (b) { ST.famMode = b.dataset.fm; const i = ST.last; $('#pbody').innerHTML = familyHTML(i); return; }
     const l = e.target.closest('[data-lf]'); if (l) { ST.lifeFilter = l.dataset.lf; $('#pbody').innerHTML = lifeHTML(ST.last); return; }
     const v = e.target.closest('[data-vm]'); if (v) { renderVillage(v.dataset.vm); return; }
